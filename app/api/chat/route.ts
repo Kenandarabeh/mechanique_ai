@@ -1,0 +1,208 @@
+import { google } from "@ai-sdk/google";
+import { streamText, convertToCoreMessages, UIMessage } from "ai";
+import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
+
+const MECHANIC_SYSTEM_PROMPT = `You are an expert car mechanic assistant. Your role is to:
+
+1. 🔧 Accurately diagnose car problems
+2. 🛠️ Provide practical and clear solutions
+3. 📋 Explain maintenance and repair steps in detail
+4. ⚠️ Warn about potential risks
+5. 💡 Give tips to prevent problems
+6. 💰 Provide approximate cost estimates when possible
+
+When answering:
+- Use clear and simple language
+- Provide specific and actionable steps
+- Mention required tools if necessary
+- Indicate when to consult a professional mechanic
+- Be patient and helpful
+
+Areas you cover:
+- Car engines
+- Brake systems
+- Suspension system
+- Electrical and battery
+- Cooling system
+- Transmission (gearbox)
+- Wheels and tires
+- Periodic maintenance
+
+IMPORTANT: Always respond in the SAME LANGUAGE as the user's question. If the user writes in Arabic, respond in Arabic. If in English, respond in English. If in French, respond in French. Match the user's language exactly.`;
+
+export async function POST(req: Request) {
+  try {
+    console.log('🔷 POST /api/chat - بدء الطلب');
+    
+    // Check authentication
+    const { userId } = await auth();
+    console.log('👤 التحقق من المصادقة...');
+    
+    if (!userId) {
+      console.error('❌ غير مصرح - لا يوجد userId');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    console.log('✅ User authenticated:', userId);
+
+    const body = await req.json();
+    console.log('📦 Body المستلم:', JSON.stringify(body, null, 2));
+    
+    const { messages, chatId }: { messages?: UIMessage[]; chatId?: string } = body;
+    
+    // Validate messages
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      console.error('❌ خطأ: الرسائل غير صحيحة أو فارغة');
+      return new Response(
+        JSON.stringify({ error: 'Messages are required and must be an array' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
+    console.log('📝 عدد الرسائل المستلمة:', messages.length);
+    console.log('🆔 Chat ID المستلم:', chatId || 'لا يوجد (محادثة جديدة)');
+    console.log('📋 الرسائل:', messages.map((m: any) => ({ role: m.role, content: typeof m.content === 'string' ? m.content.substring(0, 50) : 'complex' })));
+    
+    let newChatId: string | undefined = chatId;
+    
+    // Prepare messages for Gemini (simple format)
+    const preparedMessages = messages.map((m: any) => ({
+      role: m.role as 'user' | 'assistant',
+      content: typeof m.content === 'string' ? m.content : String(m.content),
+    }));
+    
+    console.log('📋 Prepared messages:', preparedMessages.length);
+    console.log('📋 First message:', preparedMessages[0]);
+    
+    const result = streamText({
+      model: google("gemini-2.5-flash"),
+      system: MECHANIC_SYSTEM_PROMPT,
+      messages: preparedMessages,
+      onFinish: async ({ text }) => {
+        console.log('✅ اكتمل الرد من Gemini');
+        console.log('📝 طول الرد:', text.length, 'حرف');
+        
+        try {
+          // Find the last user message
+          let lastUserMessage = messages[messages.length - 1];
+          
+          // If last message is not user, find the last user message
+          if (lastUserMessage.role !== 'user') {
+            for (let i = messages.length - 1; i >= 0; i--) {
+              if (messages[i].role === 'user') {
+                lastUserMessage = messages[i];
+                break;
+              }
+            }
+          }
+          
+          console.log('📩 آخر رسالة من المستخدم:', lastUserMessage);
+          
+          let question = "";
+          
+          const content = (lastUserMessage as any).content;
+          console.log('📄 نوع المحتوى:', typeof content);
+          console.log('📄 المحتوى الكامل:', content);
+          
+          if (typeof content === "string") {
+            question = content;
+          } else if (Array.isArray(content)) {
+            const textPart = content.find((p: any) => p.type === "text");
+            question = textPart?.text || "";
+          } else if (content && typeof content === 'object') {
+            // Handle object with text property
+            question = (content as any).text || "";
+          }
+          
+          console.log('❓ السؤال المستخرج:', question);
+          
+          if (!question || question.trim() === "") {
+            console.warn('⚠️ تحذير: السؤال فارغ! استخدام fallback');
+            question = "محادثة جديدة";
+          }
+
+          if (!newChatId) {
+            // Create new chat with Prisma
+            console.log('💾 إنشاء محادثة جديدة في Prisma...');
+            console.log('👤 User ID:', userId);
+            console.log('📝 العنوان:', question.substring(0, 100));
+            
+            const createdChat = await prisma.chat.create({
+              data: {
+                userId,
+                title: question.substring(0, 100),
+                messages: {
+                  create: [
+                    {
+                      role: "user",
+                      content: question,
+                    },
+                    {
+                      role: "assistant",
+                      content: text,
+                    },
+                  ],
+                },
+              },
+            });
+            newChatId = createdChat.id;
+            console.log('✅ تم إنشاء المحادثة بنجاح!');
+            console.log('🆔 Chat ID الجديد:', newChatId);
+            console.log('📊 تفاصيل المحادثة:', createdChat);
+          } else {
+            // Add messages to existing chat
+            console.log('💾 إضافة رسائل إلى المحادثة الموجودة:', newChatId);
+            console.log('📝 السؤال:', question);
+            console.log('📝 الجواب:', text.substring(0, 100) + '...');
+            
+            const result = await prisma.message.createMany({
+              data: [
+                {
+                  chatId: newChatId,
+                  role: "user",
+                  content: question,
+                },
+                {
+                  chatId: newChatId,
+                  role: "assistant",
+                  content: text,
+                },
+              ],
+            });
+            
+            console.log('✅ تم حفظ الرسائل بنجاح!');
+            console.log('📊 عدد الرسائل المحفوظة:', result.count);
+          }
+        } catch (error) {
+          console.error('❌ فشل الحفظ في Prisma:', error);
+          console.error('❌ تفاصيل الخطأ:', error instanceof Error ? error.message : error);
+          console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'N/A');
+        }
+      },
+    });
+
+    console.log('✅ Stream بدأ بنجاح');
+    
+    // Add chatId to response headers
+    const response = result.toUIMessageStreamResponse();
+    if (newChatId) {
+      response.headers.set('X-Chat-Id', newChatId);
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('❌ Error in chat API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}

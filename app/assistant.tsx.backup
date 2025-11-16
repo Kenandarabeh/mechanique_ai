@@ -1,0 +1,147 @@
+"use client";
+
+import { AssistantRuntimeProvider, useAssistantRuntime } from "@assistant-ui/react";
+import {
+  useChatRuntime,
+  AssistantChatTransport,
+} from "@assistant-ui/react-ai-sdk";
+import { useAuth, UserButton } from "@clerk/nextjs";
+import { Thread } from "@/components/assistant-ui/thread";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { ThreadListSidebar } from "@/components/assistant-ui/threadlist-sidebar";
+import { Separator } from "@/components/ui/separator";
+import { useEffect, useRef, useState } from "react";
+
+// ChatSaver is no longer needed - saving happens in API route
+const ChatSaver = () => {
+  return null;
+};
+
+interface AssistantProps {
+  chatId?: string;
+}
+
+export const Assistant = ({ chatId }: AssistantProps = {}) => {
+  const { getToken } = useAuth();
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  
+  console.log("🔷 Assistant Component - تهيئة المكون");
+  console.log("API URL:", "/api/chat");
+  console.log("Chat ID:", chatId || "جديد");
+
+  const runtime = useChatRuntime({
+    transport: new AssistantChatTransport({
+      api: "/api/chat",
+      headers: async () => {
+        const token = await getToken();
+        return {
+          Authorization: `Bearer ${token}`,
+        };
+      },
+      body: {
+        chatId,
+      },
+    }),
+  });
+
+  // Load chat messages if chatId is provided
+  useEffect(() => {
+    console.log("🔄 useEffect triggered - chatId:", chatId, "runtime:", !!runtime);
+    if (chatId && runtime && !isLoadingMessages) {
+      console.log("▶️ سيتم تحميل المحادثة...");
+      loadChat(chatId);
+    } else {
+      console.log("⏭️ لن يتم التحميل:", { chatId, hasRuntime: !!runtime, isLoadingMessages });
+    }
+  }, [chatId]);
+
+  const loadChat = async (id: string) => {
+    try {
+      console.log("� بدء تحميل المحادثة:", id);
+      console.log("📡 URL:", `/api/chats/${id}`);
+      
+      const response = await fetch(`/api/chats/${id}`);
+      console.log("📡 Response status:", response.status, response.statusText);
+      
+      if (response.ok) {
+        const chat = await response.json();
+        console.log("✅ البيانات المستلمة:", chat);
+        console.log("✅ عدد الرسائل:", chat.messages?.length);
+        console.log("✅ الرسائل:", chat.messages);
+        
+        // Convert to assistant-ui format
+        const messages = chat.messages.map((msg: any) => {
+          console.log("🔄 تحويل رسالة:", msg);
+          return {
+            id: msg.id,
+            role: msg.role,
+            content: [{ type: "text", text: msg.content }],
+          };
+        });
+        
+        console.log("✅ الرسائل المحولة:", messages);
+        
+        // Import messages into runtime
+        console.log("▶️ استيراد الرسائل إلى runtime...");
+        runtime.thread.import({ messages });
+        console.log("✅ تم استيراد الرسائل بنجاح!");
+      } else {
+        console.error("❌ خطأ في Response:", response.status, await response.text());
+      }
+    } catch (error) {
+      console.error("❌ فشل تحميل المحادثة:", error);
+      console.error("❌ Error details:", error);
+    }
+  };
+
+  console.log("✓ Runtime تم إنشاؤه بنجاح");
+
+  return (
+    <AssistantRuntimeProvider runtime={runtime}>
+      <ChatSaver />
+      <SidebarProvider defaultOpen={true}>
+        <div className="flex h-dvh w-full flex-row-reverse">
+          <ThreadListSidebar />
+          <SidebarInset className="flex-1">
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-gradient-to-l from-blue-600/10 to-blue-500/5">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="flex items-center gap-2">
+                  <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+                  </svg>
+                  <div>
+                    <h1 className="font-bold text-lg text-blue-600">🔧 مساعد الميكانيك الذكي</h1>
+                    <p className="text-xs text-muted-foreground">مساعدك الشخصي لصيانة وإصلاح السيارات</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* User Profile & Logout */}
+              <div className="flex items-center gap-3">
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-10 h-10",
+                      userButtonPopoverCard: "shadow-xl",
+                    }
+                  }}
+                  afterSignOutUrl="/sign-in"
+                  showName={false}
+                />
+                <Separator orientation="vertical" className="ml-2 h-4" />
+                <SidebarTrigger />
+              </div>
+            </header>
+            <div className="flex-1 overflow-hidden">
+              <Thread />
+            </div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </AssistantRuntimeProvider>
+  );
+};

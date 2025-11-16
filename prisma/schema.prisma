@@ -1,0 +1,35 @@
+// Prisma Schema for Mechanic AI Chatbot
+// Supports SQLite (default) and PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // Change to "postgresql" for PostgreSQL
+  url      = env("DATABASE_URL")
+}
+
+// User's chat conversations
+model Chat {
+  id        String   @id @default(cuid())
+  userId    String   // Clerk user ID
+  title     String   // First message as title
+  messages  Message[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// Individual messages in a chat
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  role      String   // "user" or "assistant"
+  content   String   // The message text
+  createdAt DateTime @default(now())
+
+  @@index([chatId])
+}
