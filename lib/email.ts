@@ -26,7 +26,7 @@ export async function sendVerificationEmail(email: string, code: string): Promis
                 <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                   <!-- Header -->
                   <tr>
-                    <td style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 40px 20px; text-align: center;">
+                    <td style="background: linear-gradient(135deg, #black 0%, #1e40af 100%); padding: 40px 20px; text-align: center;">
                       <h1 style="color: #ffffff; margin: 0; font-size: 28px;">🔧 Mechanique AI</h1>
                       <p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 16px;">مساعد الميكانيك الذكي</p>
                     </td>
@@ -44,9 +44,9 @@ export async function sendVerificationEmail(email: string, code: string): Promis
                       <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                           <td align="center">
-                            <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 30px; border-radius: 12px; border: 2px solid #2563eb; display: inline-block;">
-                              <p style="color: #64748b; font-size: 14px; margin: 0 0 10px 0; text-align: center;">رمز التحقق</p>
-                              <h1 style="color: #2563eb; font-size: 42px; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace;">${code}</h1>
+                            <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 30px; border-radius: 12px; border: 2px solid #black; display: inline-block;">
+                              <p style="color: black; font-size: 14px; margin: 0 0 10px 0; text-align: center;">رمز التحقق</p>
+                              <h1 style="color: black; font-size: 42px; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace;">${code}</h1>
                             </div>
                           </td>
                         </tr>

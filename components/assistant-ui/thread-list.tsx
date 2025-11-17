@@ -25,7 +25,7 @@ const ThreadListNew: FC = () => {
   return (
     <ThreadListPrimitive.New asChild>
       <Button
-        className="aui-thread-list-new flex items-center justify-start gap-1 rounded-lg px-2.5 py-2 text-start hover:bg-blue-500/20 hover:text-blue-400 data-active:bg-blue-500/30 transition-colors"
+        className="aui-thread-list-new flex items-center justify-start gap-1 rounded-lg px-2.5 py-2 text-start hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-100 data-active:bg-gray-200 dark:data-active:bg-gray-700 transition-colors"
         variant="ghost"
       >
         <PlusIcon />
@@ -66,7 +66,7 @@ const ThreadListSkeleton: FC = () => {
 
 const ThreadListItem: FC = () => {
   return (
-    <ThreadListItemPrimitive.Root className="aui-thread-list-item flex items-center gap-2 rounded-lg transition-all hover:bg-blue-500/10 focus-visible:bg-blue-500/20 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none data-active:bg-blue-500/20">
+    <ThreadListItemPrimitive.Root className="aui-thread-list-item flex items-center gap-2 rounded-lg transition-all hover:bg-gray-100 dark:hover:bg-gray-800 focus-visible:bg-gray-200 dark:focus-visible:bg-gray-700 focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:outline-none data-active:bg-gray-200 dark:data-active:bg-gray-700">
       <ThreadListItemPrimitive.Trigger className="aui-thread-list-item-trigger flex-grow px-3 py-2 text-start">
         <ThreadListItemTitle />
       </ThreadListItemPrimitive.Trigger>
@@ -78,7 +78,7 @@ const ThreadListItem: FC = () => {
 const ThreadListItemTitle: FC = () => {
   const { t } = useTranslation();
   return (
-    <span className="aui-thread-list-item-title text-sm">
+    <span className="aui-thread-list-item-title text-sm text-gray-800 dark:text-gray-200">
       <ThreadListItemPrimitive.Title fallback={t('sidebar.newChat')} />
     </span>
   );
@@ -89,7 +89,7 @@ const ThreadListItemArchive: FC = () => {
   return (
     <ThreadListItemPrimitive.Archive asChild>
       <TooltipIconButton
-        className="aui-thread-list-item-archive mr-3 ml-auto size-4 p-0 text-foreground hover:text-primary"
+        className="aui-thread-list-item-archive mr-3 ml-auto size-4 p-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
         variant="ghost"
         tooltip={t('sidebar.archiveThread')}
       >

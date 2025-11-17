@@ -96,15 +96,15 @@ export function SavedChatsList() {
 
   return (
     <div className="space-y-1 px-2">
-      <div className="px-3 py-2 text-xs font-semibold text-muted-foreground">
+      <div className="px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
         {t('sidebar.savedChats')} ({chats.length})
       </div>
       {chats.map((chat) => (
         <Link
           key={chat.id}
           href={`/chat/${chat.id}`}
-          className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-blue-500/10 transition-colors ${
-            selectedChatId === chat.id ? "bg-blue-500/20" : ""
+          className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors ${
+            selectedChatId === chat.id ? "bg-gray-200 dark:bg-gray-700" : ""
           }`}
           onClick={(e) => {
             console.log("🖱️🖱️🖱️ CLICK EVENT FIRED! 🖱️🖱️🖱️");
@@ -119,11 +119,11 @@ export function SavedChatsList() {
             window.location.href = `/chat/${chat.id}`;
           }}
         >
-          <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="flex-1 truncate text-start text-sm" title={chat.title}>
+          <MessageSquare className="h-4 w-4 shrink-0 text-gray-600 dark:text-gray-400" />
+          <span className="flex-1 truncate text-start text-sm text-gray-200 hover:text-gray-800 dark:text-gray-200" title={chat.title}>
             {chat.title}
           </span>
-          <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100">
+          <span className="text-xs text-gray-500 dark:text-gray-500 opacity-0 group-hover:opacity-100">
             {new Date(chat.createdAt).toLocaleDateString(dateLocale, {
               month: "short",
               day: "numeric",

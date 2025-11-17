@@ -7,8 +7,9 @@ import {
   type AppendMessage,
 } from "@assistant-ui/react";
 import { useAuth } from "@/contexts/auth-context";
-import { LogOut } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { Thread } from "@/components/assistant-ui/thread";
 import {
   SidebarInset,
@@ -28,6 +29,7 @@ interface AssistantProps {
 
 export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
   const { user, token, signOut } = useAuth();
+  const router = useRouter();
   const { t, locale } = useTranslation();
   const [messages, setMessages] = useState<ThreadMessageLike[]>([]);
   const [isRunning, setIsRunning] = useState(false);
@@ -398,7 +400,7 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-gray-100 mx-auto mb-4"></div>
           <p className="text-muted-foreground">{t('loading.chat')}</p>
         </div>
       </div>
@@ -414,7 +416,7 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
         <div className="flex h-dvh w-full">
           <ThreadListSidebar            />
           <SidebarInset className="flex-1">
-            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-gradient-to-l from-blue-600/10 to-blue-500/5">
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-gradient-to-l from-gray-100/50 to-gray-50/30 dark:from-gray-800/50 dark:to-gray-900/30">
               <div className="flex items-center gap-2">
                 <SidebarTrigger />
                 <Separator orientation="vertical" className="h-4" />
@@ -422,11 +424,11 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
               
               <div className="flex items-center gap-3 flex-1">
                 <div className="flex items-center gap-2">
-                  <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8 text-gray-900 dark:text-gray-100" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
                   </svg>
                   <div>
-                    <h1 className="font-bold text-lg text-blue-600">🔧 {t('header.title')}</h1>
+                    <h1 className="font-bold text-lg text-gray-900 dark:text-gray-100">🔧 {t('header.title')}</h1>
                     <p className="text-xs text-muted-foreground">{t('header.subtitle')}</p>
                   </div>
                 </div>
@@ -441,8 +443,16 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => router.push('/profile')}
+                      title={t('profile.title')}
+                    >
+                      <User className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={signOut}
-                      title={locale === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}
+                      title={t('header.signOut')}
                     >
                       <LogOut className="h-5 w-5" />
                     </Button>

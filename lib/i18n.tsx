@@ -73,6 +73,25 @@ export const translations = {
     // Loading & Errors
     "loading.chat": "جارٍ تحميل المحادثة...",
     "error.general": "عذراً، حدث خطأ في معالجة طلبك. يرجى المحاولة مرة أخرى.",
+    
+    // Profile
+    "profile.title": "الملف الشخصي",
+    "profile.email": "البريد الإلكتروني",
+    "profile.name": "الاسم",
+    "profile.changePassword": "تغيير كلمة المرور",
+    "profile.currentPassword": "كلمة المرور الحالية",
+    "profile.newPassword": "كلمة المرور الجديدة",
+    "profile.confirmPassword": "تأكيد كلمة المرور",
+    "profile.save": "حفظ التغييرات",
+    "profile.updateSuccess": "تم تحديث الملف الشخصي بنجاح",
+    "profile.updateFailed": "فشل تحديث الملف الشخصي",
+    "profile.currentPasswordRequired": "كلمة المرور الحالية مطلوبة لتغيير كلمة المرور",
+    "profile.passwordMismatch": "كلمات المرور غير متطابقة",
+    "profile.passwordTooShort": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+    
+    // Common
+    "common.loading": "جاري التحميل...",
+    "common.back": "رجوع",
   },
   en: {
     // Sidebar
@@ -134,6 +153,25 @@ export const translations = {
     // Loading & Errors
     "loading.chat": "Loading chat...",
     "error.general": "Sorry, an error occurred processing your request. Please try again.",
+    
+    // Profile
+    "profile.title": "Profile",
+    "profile.email": "Email",
+    "profile.name": "Name",
+    "profile.changePassword": "Change Password",
+    "profile.currentPassword": "Current Password",
+    "profile.newPassword": "New Password",
+    "profile.confirmPassword": "Confirm Password",
+    "profile.save": "Save Changes",
+    "profile.updateSuccess": "Profile updated successfully",
+    "profile.updateFailed": "Failed to update profile",
+    "profile.currentPasswordRequired": "Current password is required to change password",
+    "profile.passwordMismatch": "Passwords do not match",
+    "profile.passwordTooShort": "Password must be at least 6 characters",
+    
+    // Common
+    "common.loading": "Loading...",
+    "common.back": "Back",
   },
   fr: {
     // Sidebar
@@ -195,11 +233,30 @@ export const translations = {
     // Loading & Errors
     "loading.chat": "Chargement de la discussion...",
     "error.general": "Désolé, une erreur s'est produite lors du traitement de votre demande. Veuillez réessayer.",
+    
+    // Profile
+    "profile.title": "Profil",
+    "profile.email": "Email",
+    "profile.name": "Nom",
+    "profile.changePassword": "Changer le mot de passe",
+    "profile.currentPassword": "Mot de passe actuel",
+    "profile.newPassword": "Nouveau mot de passe",
+    "profile.confirmPassword": "Confirmer le mot de passe",
+    "profile.save": "Enregistrer les modifications",
+    "profile.updateSuccess": "Profil mis à jour avec succès",
+    "profile.updateFailed": "Échec de la mise à jour du profil",
+    "profile.currentPasswordRequired": "Le mot de passe actuel est requis pour changer le mot de passe",
+    "profile.passwordMismatch": "Les mots de passe ne correspondent pas",
+    "profile.passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères",
+    
+    // Common
+    "common.loading": "Chargement...",
+    "common.back": "Retour",
   },
 };
 
 export function TranslationProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('ar');
+  const [locale, setLocaleState] = useState<Locale>('en'); // Changed default to English
 
   useEffect(() => {
     // Load saved language from localStorage
@@ -207,6 +264,9 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
     if (savedLocale && ['ar', 'en', 'fr'].includes(savedLocale)) {
       setLocaleState(savedLocale);
       updateDocumentDirection(savedLocale);
+    } else {
+      // Set default language if none saved
+      updateDocumentDirection('en');
     }
   }, []);
 
@@ -233,7 +293,8 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
   };
 
   const t = (key: string): string => {
-    return translations[locale][key as keyof typeof translations['ar']] || key;
+    const translation = (translations[locale] as Record<string, string>)[key];
+    return translation || key;
   };
 
   return (

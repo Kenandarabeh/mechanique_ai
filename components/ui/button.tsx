@@ -10,16 +10,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+          "bg-gray-900 text-white shadow-xs hover:bg-gray-800 dark:bg-gray-100 dark:text-black dark:hover:bg-gray-200",
         destructive:
-          "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+          "bg-gray-700 text-white shadow-xs hover:bg-gray-600 focus-visible:ring-gray-500/20 dark:focus-visible:ring-gray-500/40 dark:bg-gray-600",
         outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+          "border bg-background shadow-xs hover:bg-gray-100 hover:text-gray-900 dark:bg-gray-800/30 dark:border-gray-700 dark:hover:bg-gray-800/50 dark:hover:text-gray-100",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+          "bg-gray-200 text-gray-900 shadow-xs hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600",
         ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        link: "text-primary underline-offset-4 hover:underline",
+          "hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800/50 dark:hover:text-gray-100",
+        link: "text-gray-900 underline-offset-4 hover:underline dark:text-gray-100",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

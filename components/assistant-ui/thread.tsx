@@ -5,8 +5,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CopyIcon,
-  PencilIcon,
-  RefreshCwIcon,
   Square,
 } from "lucide-react";
 
@@ -49,7 +47,6 @@ export const Thread: FC = () => {
             <ThreadPrimitive.Messages
               components={{
                 UserMessage,
-                EditComposer,
                 AssistantMessage,
               }}
             />
@@ -93,7 +90,7 @@ const ThreadWelcome: FC = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="aui-thread-welcome-message-motion-1 flex items-center gap-3 text-3xl font-bold text-blue-600"
+            className="aui-thread-welcome-message-motion-1 flex items-center gap-3 text-3xl font-bold text-black dark:text-white"
           >
             <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
               <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
@@ -160,13 +157,13 @@ const ThreadSuggestions: FC = () => {
           >
             <Button
               variant="ghost"
-              className="aui-thread-welcome-suggestion h-auto w-full flex-1 flex-wrap items-start justify-start gap-1 rounded-3xl border px-5 py-4 text-left text-sm @md:flex-col hover:bg-blue-500/10 hover:border-blue-500/30 dark:hover:bg-blue-500/20 dark:hover:border-blue-500/40 transition-all duration-200"
+              className="aui-thread-welcome-suggestion h-auto  w-full flex-1 flex-wrap items-start justify-start gap-1 rounded-3xl border border-gray-200 bg-white px-5 py-4 text-left text-sm @md:flex-col hover:bg-gray-50 hover:border-gray-400 dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-gray-800 dark:hover:border-gray-600 transition-all duration-200"
               aria-label={suggestedAction.action}
             >
-              <span className="aui-thread-welcome-suggestion-text-1 font-medium text-foreground">
+              <span className="aui-thread-welcome-suggestion-text-1 hover:text-black font-medium text-gray-900 dark:text-gray-100">
                 {suggestedAction.title}
               </span>
-              <span className="aui-thread-welcome-suggestion-text-2 text-muted-foreground group-hover:text-foreground/80">
+              <span className="aui-thread-welcome-suggestion-text-2 hover:text-black text-gray-600 dark:text-gray-400">
                 {suggestedAction.label}
               </span>
             </Button>
@@ -224,7 +221,7 @@ const ComposerAction: FC = () => {
             type="button"
             variant="default"
             size="icon"
-            className="aui-composer-cancel size-[34px] rounded-full border border-muted-foreground/60 hover:bg-primary/75 dark:border-muted-foreground/90"
+            className="aui-composer-cancel size-[34px] rounded-full border border-muted-foreground/60 hover:bg-gray-800 dark:hover:bg-gray-200 dark:border-muted-foreground/90"
             aria-label={t('message.stopGenerating')}
           >
             <Square className="aui-composer-cancel-icon size-3.5 fill-white dark:fill-black" />
@@ -238,7 +235,7 @@ const ComposerAction: FC = () => {
 const MessageError: FC = () => {
   return (
     <MessagePrimitive.Error>
-      <ErrorPrimitive.Root className="aui-message-error-root mt-2 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive dark:bg-destructive/5 dark:text-red-200">
+      <ErrorPrimitive.Root className="aui-message-error-root mt-2 rounded-md border border-gray-300 bg-gray-100 p-3 text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700">
         <ErrorPrimitive.Message className="aui-message-error-message line-clamp-2" />
       </ErrorPrimitive.Root>
     </MessagePrimitive.Error>
@@ -291,11 +288,6 @@ const AssistantActionBar: FC = () => {
           </MessagePrimitive.If>
         </TooltipIconButton>
       </ActionBarPrimitive.Copy>
-      <ActionBarPrimitive.Reload asChild>
-        <TooltipIconButton tooltip={t('message.refresh')}>
-          <RefreshCwIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.Reload>
     </ActionBarPrimitive.Root>
   );
 };
@@ -331,40 +323,8 @@ const UserActionBar: FC = () => {
       autohide="not-last"
       className="aui-user-action-bar-root flex flex-col items-end"
     >
-      <ActionBarPrimitive.Edit asChild>
-        <TooltipIconButton tooltip={t('message.edit')} className="aui-user-action-edit p-4">
-          <PencilIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.Edit>
+      {/* Edit button removed as per user request */}
     </ActionBarPrimitive.Root>
-  );
-};
-
-const EditComposer: FC = () => {
-  const { t } = useTranslation();
-  
-  return (
-    <div className="aui-edit-composer-wrapper mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-4 px-2 first:mt-4">
-      <ComposerPrimitive.Root className="aui-edit-composer-root ml-auto flex w-full max-w-7/8 flex-col rounded-xl bg-muted">
-        <ComposerPrimitive.Input
-          className="aui-edit-composer-input flex min-h-[60px] w-full resize-none bg-transparent p-4 text-foreground outline-none"
-          autoFocus
-        />
-
-        <div className="aui-edit-composer-footer mx-3 mb-3 flex items-center justify-center gap-2 self-end">
-          <ComposerPrimitive.Cancel asChild>
-            <Button variant="ghost" size="sm" aria-label={t('composer.cancel')}>
-              {t('composer.cancel')}
-            </Button>
-          </ComposerPrimitive.Cancel>
-          <ComposerPrimitive.Send asChild>
-            <Button size="sm" aria-label={t('message.update')}>
-              {t('message.update')}
-            </Button>
-          </ComposerPrimitive.Send>
-        </div>
-      </ComposerPrimitive.Root>
-    </div>
   );
 };
 
