@@ -36,7 +36,6 @@ export const translations = {
     "composer.placeholder": "اكتب رسالتك هنا...",
     "composer.send": "إرسال",
     "composer.cancel": "إلغاء",
-    "composer.addAttachment": "إضافة مرفق",
     "composer.messageInput": "إدخال الرسالة",
     
     // Messages
@@ -98,7 +97,6 @@ export const translations = {
     "composer.placeholder": "Type your message here...",
     "composer.send": "Send",
     "composer.cancel": "Cancel",
-    "composer.addAttachment": "Add Attachment",
     "composer.messageInput": "Message input",
     
     // Messages
@@ -160,7 +158,6 @@ export const translations = {
     "composer.placeholder": "Tapez votre message ici...",
     "composer.send": "Envoyer",
     "composer.cancel": "Annuler",
-    "composer.addAttachment": "Ajouter une pièce jointe",
     "composer.messageInput": "Saisie du message",
     
     // Messages

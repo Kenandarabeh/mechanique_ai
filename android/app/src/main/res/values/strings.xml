@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">مساعد الميكانيك الذكي</string>
-    <string name="title_activity_main">مساعد الميكانيك الذكي</string>
-    <string name="package_name">com.mechanic.ai</string>
-    <string name="custom_url_scheme">com.mechanic.ai</string>
-</resources>
