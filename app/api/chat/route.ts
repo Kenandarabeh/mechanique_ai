@@ -1,7 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { streamText, convertToCoreMessages, UIMessage } from "ai";
-import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { verifyToken } from "@/lib/auth";
 
 const MECHANIC_SYSTEM_PROMPT = `You are an expert car mechanic assistant. Your role is to:
 
@@ -35,11 +35,23 @@ export async function POST(req: Request) {
   try {
     console.log('🔷 POST /api/chat - بدء الطلب');
     
-    // Check authentication
-    const { userId } = await auth();
+    // Get userId from JWT or header
+    const userId = req.headers.get("x-user-id");
+    const authHeader = req.headers.get("Authorization");
+    const token = authHeader?.replace("Bearer ", "");
+    
+    // Verify JWT if provided
+    let verifiedUserId = userId;
+    if (token) {
+      const decoded = verifyToken(token);
+      if (decoded) {
+        verifiedUserId = decoded.userId;
+      }
+    }
+    
     console.log('👤 التحقق من المصادقة...');
     
-    if (!userId) {
+    if (!verifiedUserId) {
       console.error('❌ غير مصرح - لا يوجد userId');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
@@ -47,7 +59,7 @@ export async function POST(req: Request) {
       });
     }
 
-    console.log('✅ User authenticated:', userId);
+    console.log('✅ User authenticated:', verifiedUserId);
 
     const body = await req.json();
     console.log('📦 Body المستلم:', JSON.stringify(body, null, 2));
@@ -82,9 +94,10 @@ export async function POST(req: Request) {
     console.log('📋 First message:', preparedMessages[0]);
     
     const result = streamText({
-      model: google("gemini-2.5-flash"),
+      model: google("gemini-2.5-flash-lite"), // استخدام النموذج الأخف والأسرع
       system: MECHANIC_SYSTEM_PROMPT,
       messages: preparedMessages,
+      maxRetries: 5, // زيادة عدد المحاولات
       onFinish: async ({ text }) => {
         console.log('✅ اكتمل الرد من Gemini');
         console.log('📝 طول الرد:', text.length, 'حرف');
@@ -131,12 +144,12 @@ export async function POST(req: Request) {
           if (!newChatId) {
             // Create new chat with Prisma
             console.log('💾 إنشاء محادثة جديدة في Prisma...');
-            console.log('👤 User ID:', userId);
+            console.log('👤 User ID:', verifiedUserId);
             console.log('📝 العنوان:', question.substring(0, 100));
             
             const createdChat = await prisma.chat.create({
               data: {
-                userId,
+                userId: verifiedUserId,
                 title: question.substring(0, 100),
                 messages: {
                   create: [
@@ -199,9 +212,28 @@ export async function POST(req: Request) {
     return response;
   } catch (error) {
     console.error('❌ Error in chat API:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      status: 500,
+    
+    // معالجة خاصة لأخطاء Gemini
+    let errorMessage = 'حدث خطأ أثناء معالجة الطلب';
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      if (error.message.includes('overloaded') || error.message.includes('UNAVAILABLE')) {
+        errorMessage = 'الخدمة مشغولة حاليًا. الرجاء المحاولة مرة أخرى بعد قليل.';
+        statusCode = 503;
+      } else if (error.message.includes('RESOURCE_EXHAUSTED')) {
+        errorMessage = 'تم تجاوز الحد المسموح. الرجاء الانتظار قليلاً.';
+        statusCode = 429;
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      retry: statusCode === 503 || statusCode === 429 
+    }), {
+      status: statusCode,
       headers: { 'Content-Type': 'application/json' }
     });
   }

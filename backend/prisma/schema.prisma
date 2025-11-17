@@ -1,0 +1,51 @@
+// Prisma Schema for Mechanic AI Backend
+// Supports SQLite (development) and PostgreSQL (production)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Database connection
+// للتطوير: SQLite (سهل وسريع) - الافتراضي
+// للإنتاج: غيّر provider إلى "postgresql" يدوياً
+datasource db {
+  provider = "sqlite" // للإنتاج: غيّر إلى "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - مزامنة من Clerk
+model User {
+  id        String   @id // Clerk User ID
+  email     String   @unique
+  name      String?
+  chats     Chat[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Chat conversation
+model Chat {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String    // First message as title
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Individual messages in a chat
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  role      String   // "user" or "assistant"
+  content   String   // Message text - SQLite: TEXT, PostgreSQL: TEXT
+  createdAt DateTime @default(now())
+
+  @@index([chatId])
+  @@index([createdAt])
+}

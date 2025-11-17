@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n";
 import { getApiUrl } from "@/lib/config";
+import { useAuth } from "@/contexts/auth-context";
 
 interface Chat {
   id: string;
@@ -16,6 +17,7 @@ interface Chat {
 
 export function SavedChatsList() {
   const { t, locale } = useTranslation();
+  const { user, token } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -29,9 +31,20 @@ export function SavedChatsList() {
   }, []);
 
   const fetchChats = async () => {
+    if (!user) {
+      console.log("⚠️ لا يوجد user - لن يتم جلب المحادثات");
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       console.log("🔄 بدء جلب المحادثات المحفوظة...");
-      const response = await fetch(getApiUrl("/api/chats"));
+      const response = await fetch(getApiUrl("/api/chats"), {
+        headers: {
+          "Authorization": token ? `Bearer ${token}` : "",
+          "x-user-id": user.id,
+        },
+      });
       console.log("📡 Response status:", response.status);
       
       if (response.ok) {

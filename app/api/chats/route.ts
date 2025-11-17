@@ -1,22 +1,34 @@
-import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { verifyToken } from "@/lib/auth";
 
 // GET all chats for the current user
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const { userId } = await auth();
+    // Get userId from JWT or header
+    const userId = request.headers.get("x-user-id");
+    const authHeader = request.headers.get("Authorization");
+    const token = authHeader?.replace("Bearer ", "");
     
-    if (!userId) {
+    // Verify JWT if provided
+    let verifiedUserId = userId;
+    if (token) {
+      const decoded = verifyToken(token);
+      if (decoded) {
+        verifiedUserId = decoded.userId;
+      }
+    }
+    
+    if (!verifiedUserId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
     
-    console.log("📥 جلب المحادثات من Prisma للمستخدم:", userId);
+    console.log("📥 جلب المحادثات من Prisma للمستخدم:", verifiedUserId);
     
     const chats = await prisma.chat.findMany({
-      where: { userId },
+      where: { userId: verifiedUserId },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

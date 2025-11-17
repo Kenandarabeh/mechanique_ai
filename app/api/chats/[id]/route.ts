@@ -1,5 +1,5 @@
-import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { verifyToken } from "@/lib/auth";
 
 // GET a specific chat with its messages
 export async function GET(
@@ -9,10 +9,23 @@ export async function GET(
   try {
     console.log("🔷 GET /api/chats/[id] - بدء الطلب");
     
-    const { userId } = await auth();
-    console.log("👤 User ID:", userId);
+    // Get userId from JWT or header
+    const userId = request.headers.get("x-user-id");
+    const authHeader = request.headers.get("Authorization");
+    const token = authHeader?.replace("Bearer ", "");
     
-    if (!userId) {
+    // Verify JWT if provided
+    let verifiedUserId = userId;
+    if (token) {
+      const decoded = verifyToken(token);
+      if (decoded) {
+        verifiedUserId = decoded.userId;
+      }
+    }
+    
+    console.log("👤 User ID:", verifiedUserId);
+    
+    if (!verifiedUserId) {
       console.error("❌ غير مصرح - لا يوجد userId");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -22,13 +35,13 @@ export async function GET(
     
     const { id } = await params;
     console.log("🆔 Chat ID المطلوب:", id);
-    console.log("� جلب المحادثة", id, "للمستخدم:", userId);
+    console.log("📥 جلب المحادثة", id, "للمستخدم:", verifiedUserId);
     
     console.log("🔍 البحث في قاعدة البيانات...");
     const chat = await prisma.chat.findFirst({
       where: { 
         id,
-        userId, // Make sure user owns this chat
+        userId: verifiedUserId, // Make sure user owns this chat
       },
       include: {
         messages: {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { LocalizedClerkProvider } from "@/components/providers/localized-clerk-provider";
+import { AuthProvider } from "@/contexts/auth-context";
 import { TranslationProvider } from "@/lib/i18n";
 import { DynamicTitle } from "@/components/dynamic-title";
 import { DynamicHtmlAttributes } from "@/components/dynamic-html-attributes";
@@ -28,18 +28,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <LocalizedClerkProvider>
-      <html lang="ar" dir="rtl" className="rtl">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
+    <html lang="ar" dir="rtl" className="rtl">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <AuthProvider>
           <TranslationProvider>
             <DynamicTitle />
             <DynamicHtmlAttributes />
             {children}
           </TranslationProvider>
-        </body>
-      </html>
-    </LocalizedClerkProvider>
+        </AuthProvider>
+      </body>
+    </html>
   );
 }

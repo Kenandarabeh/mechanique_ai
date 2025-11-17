@@ -6,7 +6,9 @@ import {
   type ThreadMessageLike,
   type AppendMessage,
 } from "@assistant-ui/react";
-import { useAuth, UserButton } from "@clerk/nextjs";
+import { useAuth } from "@/contexts/auth-context";
+import { LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Thread } from "@/components/assistant-ui/thread";
 import {
   SidebarInset,
@@ -25,7 +27,7 @@ interface AssistantProps {
 }
 
 export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
-  const { getToken } = useAuth();
+  const { user, token, signOut } = useAuth();
   const { t, locale } = useTranslation();
   const [messages, setMessages] = useState<ThreadMessageLike[]>([]);
   const [isRunning, setIsRunning] = useState(false);
@@ -65,10 +67,10 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
     
     const loadMessages = async () => {
       try {
-        const token = await getToken();
         const response = await fetch(getApiUrl(`/api/chats/${chatId}`), {
           headers: {
             'Authorization': token ? `Bearer ${token}` : '',
+            'x-user-id': user?.id || '',
           },
         });
 
@@ -104,7 +106,7 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
     };
 
     loadMessages();
-  }, [chatId, getToken]);
+  }, [chatId, token, user]);
 
   // Handler for new messages
   const onNew = useCallback(async (message: AppendMessage) => {
@@ -138,8 +140,6 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
     setIsRunning(true);
     
     try {
-      const token = await getToken();
-      
       // Prepare all messages for API
       const allMessages = [...messages, userMessage].map(m => {
         const content = m.content;
@@ -165,6 +165,7 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
         headers: {
           "Content-Type": "application/json",
           "Authorization": token ? `Bearer ${token}` : "",
+          "x-user-id": user?.id || "",
         },
         body: JSON.stringify({
           messages: allMessages,
@@ -368,7 +369,7 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
     } finally {
       setIsRunning(false);
     }
-  }, [messages, chatId, getToken]);
+  }, [messages, chatId, token, user]);
 
   // Create runtime with ExternalStoreRuntime
   const runtime = useExternalStoreRuntime({
@@ -434,17 +435,18 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
               <div className="flex items-center gap-2">
                 <LanguageSwitcher />
                 <Separator orientation="vertical" className="h-4" />
-                {isMounted && (
-                  <UserButton 
-                    appearance={{
-                      elements: {
-                        avatarBox: "w-10 h-10",
-                        userButtonPopoverCard: "shadow-xl",
-                      }
-                    }}
-                    afterSignOutUrl="/sign-in"
-                    showName={false}
-                  />
+                {isMounted && user && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">{user.name || user.email}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={signOut}
+                      title={locale === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}
+                    >
+                      <LogOut className="h-5 w-5" />
+                    </Button>
+                  </div>
                 )}
               </div>
             </header>

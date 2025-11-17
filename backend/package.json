@@ -1,0 +1,55 @@
+{
+  "name": "mechanic-ai-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Mechanic AI Chatbot",
+  "main": "dist/server.js",
+  "scripts": {
+    "init": "npm install && npx prisma generate && npm run db:push",
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "db:push": "npx prisma db push",
+    "db:studio": "npx prisma studio",
+    "db:migrate": "npx prisma migrate dev",
+    "db:generate": "npx prisma generate",
+    "db:reset": "npx prisma migrate reset",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "keywords": ["express", "typescript", "prisma", "ai", "chatbot"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^6.19.0",
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "jsonwebtoken": "^9.0.2",
+    "helmet": "^8.0.0",
+    "express-rate-limit": "^7.5.0",
+    "compression": "^1.7.5",
+    "morgan": "^1.10.0",
+    "@ai-sdk/google": "^2.0.32",
+    "ai": "^5.0.65",
+    "@google/generative-ai": "^0.24.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.10.2",
+    "@types/compression": "^1.7.5",
+    "@types/morgan": "^1.9.9",
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2",
+    "prisma": "^6.19.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.2",
+    "@typescript-eslint/parser": "^8.18.2",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
