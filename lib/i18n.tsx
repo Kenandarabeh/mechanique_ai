@@ -124,6 +124,11 @@ export const translations = {
     "oilTracker.enableNotifications": "تفعيل الإشعارات",
     "oilTracker.testNotification": "اختبار الإشعار",
     
+    // Auth
+    "auth.logout": "تسجيل الخروج",
+    "auth.signIn": "تسجيل الدخول",
+    "auth.signUp": "إنشاء حساب",
+    
     // Common
     "common.loading": "جاري التحميل...",
     "common.back": "رجوع",
@@ -236,6 +241,11 @@ export const translations = {
     "oilTracker.overdue": "Overdue!",
     "oilTracker.recommended": "Recommended: Every 6 months or 5000 km",
     
+    // Auth
+    "auth.logout": "Logout",
+    "auth.signIn": "Sign In",
+    "auth.signUp": "Sign Up",
+    
     // Common
     "common.loading": "Loading...",
     "common.back": "Back",
@@ -347,6 +357,11 @@ export const translations = {
     "oilTracker.warning": "Bientôt dû",
     "oilTracker.overdue": "En retard!",
     "oilTracker.recommended": "Recommandé: Tous les 6 mois ou 5000 km",
+    
+    // Auth
+    "auth.logout": "Se déconnecter",
+    "auth.signIn": "Se connecter",
+    "auth.signUp": "S'inscrire",
     
     // Common
     "common.loading": "Chargement...",

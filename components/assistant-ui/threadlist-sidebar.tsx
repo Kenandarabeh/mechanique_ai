@@ -1,20 +1,20 @@
 import * as React from "react";
-import { MessagesSquare, History } from "lucide-react";
+import { History, LogOut } from "lucide-react";
 import Link from "next/link";
 import NextImage from "next/image";
 import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarRail,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import { ThreadList } from "@/components/assistant-ui/thread-list";
 import { SavedChatsList } from "@/components/assistant-ui/saved-chats-list";
 import { Separator } from "@/components/ui/separator";
 import { useTranslation } from "@/lib/i18n";
+import { useAuth } from "@/contexts/auth-context";
+import { Button } from "@/components/ui/button";
 
 function HistoryHeader() {
   const { t } = useTranslation();
@@ -49,6 +49,13 @@ function Logo() {
 }
 
 export function ThreadListSidebar(props: React.ComponentProps<typeof Sidebar>) {
+  const { t } = useTranslation();
+  const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+  };
+
   return (
     <Sidebar side="left" dir="ltr" {...props}>
       <SidebarHeader className="aui-sidebar-header mb-2 border-b border-gray-200 dark:border-gray-700 py-4">
@@ -62,6 +69,16 @@ export function ThreadListSidebar(props: React.ComponentProps<typeof Sidebar>) {
         <HistoryHeader />
         <SavedChatsList />
       </SidebarContent>
+      <SidebarFooter className="border-t border-gray-200 dark:border-gray-700 p-4">
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          className="w-full flex items-center justify-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 border-red-200 dark:border-red-800"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>{t('auth.logout')}</span>
+        </Button>
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

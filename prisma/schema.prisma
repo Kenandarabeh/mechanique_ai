@@ -53,9 +53,10 @@ model User {
 // Email verification codes (OTP)
 model VerificationCode {
   id        String   @id @default(cuid())
-  email     String
+  email     String   @unique
   code      String
   expiresAt DateTime
+  metadata  String?  // Store temporary user data (password, name) as JSON
   createdAt DateTime @default(now())
 
   @@index([email])

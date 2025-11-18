@@ -53,7 +53,7 @@ export async function storeOTP(email: string, code: string): Promise<void> {
   });
 }
 
-// Verify OTP
+// Verify OTP (does NOT delete - deletion happens in verify route after user creation)
 export async function verifyOTP(email: string, code: string): Promise<boolean> {
   // Find valid OTP
   const validOTP = await prisma.verificationCode.findFirst({
@@ -66,13 +66,7 @@ export async function verifyOTP(email: string, code: string): Promise<boolean> {
     },
   });
   
-  if (validOTP) {
-    // Delete used OTP
-    await prisma.verificationCode.deleteMany({
-      where: { email },
-    });
-    return true;
-  }
-  
-  return false;
+  // Return true if valid, false otherwise
+  // NOTE: We don't delete here! The verify route will delete after creating the user
+  return validOTP !== null;
 }

@@ -444,7 +444,6 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
                   </div>
                   <div className="sm:hidden">
                     <h1 className="font-semibold text-[11px] leading-tight text-gray-900 dark:text-gray-100">MechaMind</h1>
-                    <p className="text-[9px] leading-tight text-muted-foreground">مساعدك الذكي للميكانيك</p>
                   </div>
                 </div>
               </div>
@@ -487,14 +486,7 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
                     >
                       <User className="h-5 w-5" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={signOut}
-                      title={t('header.signOut')}
-                    >
-                      <LogOut className="h-5 w-5" />
-                    </Button>
+                  
                   </div>
                 )}
               </div>

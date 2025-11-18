@@ -37,10 +37,13 @@ export default function SignUpPage() {
       code: "رمز التحقق (6 أرقام)",
       verify: "تحقق",
       resend: "إعادة إرسال الرمز",
+      changeEmail: "تغيير البريد",
       hasAccount: "لديك حساب؟",
       signin: "تسجيل الدخول",
       sending: "جاري الإرسال...",
       verifying: "جاري التحقق...",
+      userExists: "هذا البريد مسجل بالفعل!",
+      userExistsMessage: "البريد الإلكتروني مستخدم بالفعل. يرجى تسجيل الدخول بدلاً من ذلك.",
     },
     en: {
       title: "Create Account",
@@ -54,10 +57,13 @@ export default function SignUpPage() {
       code: "Verification Code (6 digits)",
       verify: "Verify",
       resend: "Resend Code",
+      changeEmail: "Change Email",
       hasAccount: "Have an account?",
       signin: "Sign In",
       sending: "Sending...",
       verifying: "Verifying...",
+      userExists: "This email is already registered!",
+      userExistsMessage: "This email is already in use. Please sign in instead.",
     },
     fr: {
       title: "Créer un compte",
@@ -71,10 +77,13 @@ export default function SignUpPage() {
       code: "Code de vérification (6 chiffres)",
       verify: "Vérifier",
       resend: "Renvoyer le code",
+      changeEmail: "Changer l'email",
       hasAccount: "Vous avez un compte?",
       signin: "Se connecter",
       sending: "Envoi...",
       verifying: "Vérification...",
+      userExists: "Cet email est déjà enregistré!",
+      userExistsMessage: "Cet email est déjà utilisé. Veuillez vous connecter.",
     },
   };
 
@@ -96,7 +105,12 @@ export default function SignUpPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Failed to sign up');
+        // Check if user already exists
+        if (data.userExists) {
+          setError(t.userExistsMessage);
+        } else {
+          setError(data.error || 'Failed to sign up');
+        }
         return;
       }
 
@@ -197,6 +211,46 @@ export default function SignUpPage() {
               className="w-full"
             >
               {t.resend}
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={async () => {
+                console.log('🔄 Change email clicked');
+                
+                // Show loading
+                setLoading(true);
+                
+                // Delete OTP immediately
+                try {
+                  const response = await fetch('/api/auth/cancel-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email }),
+                  });
+                  
+                  if (response.ok) {
+                    console.log('✅ OTP cancelled successfully');
+                  }
+                } catch (error) {
+                  console.error('⚠️ Failed to cancel OTP:', error);
+                  // Continue anyway - reset the form
+                }
+                
+                // Reset to signup page immediately
+                setStep('signup');
+                setCode('');
+                setError('');
+                setEmail('');
+                setPassword('');
+                setName('');
+                setLoading(false);
+              }}
+              disabled={loading}
+              className="w-full text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            >
+              {t.changeEmail}
             </Button>
           </form>
         </div>

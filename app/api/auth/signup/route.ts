@@ -21,34 +21,59 @@ export async function POST(request: Request) {
 
     if (existingUser) {
       return new Response(
-        JSON.stringify({ error: "User already exists" }),
+        JSON.stringify({ 
+          error: "User already exists",
+          message: "This email is already registered. Please sign in instead.",
+          userExists: true
+        }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
     // Generate OTP
     const code = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
     
-    // Store OTP
-    await storeOTP(email, code);
-
-    // Hash password and create unverified user
+    console.log('🔐 Generated OTP:', code);
+    console.log('📧 Sending to:', email);
+    
+    // Hash password
     const hashedPassword = await hashPassword(password);
-    await prisma.user.create({
+    
+    // Delete any existing verification code for this email first
+    await prisma.verificationCode.deleteMany({
+      where: { email }
+    });
+    
+    // Store signup data temporarily (don't create user yet!)
+    // @ts-ignore - metadata field exists after migration
+    await prisma.verificationCode.create({
       data: {
         email,
-        password: hashedPassword,
-        name: name || email.split('@')[0],
-        verified: false,
-      },
+        code,
+        expiresAt,
+        metadata: JSON.stringify({ password: hashedPassword, name })
+      }
     });
-
+    
     // Send verification email
+    console.log('📨 Attempting to send email...');
+    console.log(`📧 Sending verification code to: ${email}`);
+    
     const emailSent = await sendVerificationEmail(email, code);
 
     if (!emailSent) {
-      console.error('Failed to send verification email');
+      console.error('❌ Failed to send verification email');
+      return new Response(
+        JSON.stringify({ 
+          error: "Failed to send verification email. Please check your email address and try again.",
+          details: "Email service error"
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
     }
+
+    console.log('✅ Email sent successfully!');
 
     return new Response(
       JSON.stringify({ 
