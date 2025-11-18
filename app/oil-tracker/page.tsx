@@ -7,27 +7,25 @@ import { useTranslation } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Loading from '@/components/ui/loading';
+import { toast, Toaster } from 'react-hot-toast';
 import {
   requestNotificationPermissions,
   checkNotificationPermissions,
-  scheduleOilChangeReminders,
-  sendTestNotification,
   isNotificationAvailable
 } from '@/lib/notifications';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
-interface OilChange {
-  date: string;
-  km: number;
+// Database model interface
+interface OilChangeRecord {
+  id: string;
+  userId: string;
+  carModel?: string;
+  purchaseDate?: string;
+  changeDate: string;
+  kilometersDone: number;
   notes?: string;
-}
-
-interface CarData {
-  model: string;
-  purchaseDate: string;
-  currentKm: number;
-  lastChangeDate: string;
-  lastChangeKm: number;
-  changes: OilChange[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function OilTrackerPage() {
@@ -35,23 +33,26 @@ export default function OilTrackerPage() {
   const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'history'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'add'>('dashboard');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [notificationStatus, setNotificationStatus] = useState<string>('');
   
-  const [carData, setCarData] = useState<CarData>({
+  // Database records
+  const [oilChanges, setOilChanges] = useState<OilChangeRecord[]>([]);
+  
+  // Car info (set once)
+  const [carInfo, setCarInfo] = useState({
     model: '',
-    purchaseDate: '',
-    currentKm: 0,
-    lastChangeDate: '',
-    lastChangeKm: 0,
-    changes: []
+    purchaseDate: ''
   });
   
-  const [newKm, setNewKm] = useState('');
-  const [notes, setNotes] = useState('');
+  // Form data for new oil change
+  const [formData, setFormData] = useState({
+    changeDate: new Date().toISOString().split('T')[0],
+    kilometersDone: '',
+    notes: ''
+  });
 
-  // Load data from localStorage
+  // Load data from database
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/auth/signin');
@@ -59,36 +60,138 @@ export default function OilTrackerPage() {
     }
     
     if (user) {
-      const saved = localStorage.getItem(`oil-tracker-${user.email}`);
-      if (saved) {
-        const data = JSON.parse(saved);
-        setCarData(data);
-        
-        // Check and schedule notifications
-        checkAndSetupNotifications(data);
-      }
-      setLoading(false);
+      loadOilChanges();
+      checkAndSetupNotifications();
     }
   }, [user, authLoading, router]);
 
-  // Check notification permissions and setup
-  const checkAndSetupNotifications = async (data: CarData) => {
+  // Load oil changes from database
+  const loadOilChanges = async () => {
+    try {
+      console.log('🔄 Loading oil changes from database...');
+      const response = await fetch('/api/oil-change');
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Oil changes loaded:', data.length);
+        setOilChanges(data);
+        
+        // Load car info from first record (if exists)
+        if (data.length > 0 && data[0].carModel) {
+          setCarInfo({
+            model: data[0].carModel || '',
+            purchaseDate: data[0].purchaseDate || ''
+          });
+        }
+        
+        // Setup notifications based on latest record
+        if (data.length > 0) {
+          scheduleNotificationsFromRecords(data);
+        }
+      } else {
+        console.error('❌ Failed to load oil changes');
+        toast.error('فشل تحميل السجلات');
+      }
+    } catch (error) {
+      console.error('❌ Error loading oil changes:', error);
+      toast.error('حدث خطأ في التحميل');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Schedule notifications based on database records (TIME-BASED SYSTEM)
+  const scheduleNotificationsFromRecords = async (records: OilChangeRecord[]) => {
     if (!isNotificationAvailable()) {
-      console.log('Notifications not available on web');
+      console.log('📱 Notifications not available on this platform');
+      return;
+    }
+
+    const hasPermission = await checkNotificationPermissions();
+    if (!hasPermission) {
+      console.log('⚠️ No notification permission');
+      return;
+    }
+
+    // Get the latest oil change
+    const latest = records[0];
+    if (!latest) return;
+
+    const changeDate = new Date(latest.changeDate);
+    const today = new Date();
+    const daysSinceChange = Math.floor((today.getTime() - changeDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Oil change recommended every 6 months (180 days)
+    const OIL_CHANGE_INTERVAL_DAYS = 180;
+    const WARNING_DAYS = 150; // Warn 30 days before
+
+    console.log(`📅 Days since last change: ${daysSinceChange}`);
+
+    // Calculate next oil change date (6 months after last change)
+    const nextChangeDate = new Date(changeDate);
+    nextChangeDate.setMonth(nextChangeDate.getMonth() + 6);
+
+    try {
+      // Cancel all previous notifications
+      await LocalNotifications.cancel({ notifications: [{ id: 1 }, { id: 2 }, { id: 3 }] });
+
+      if (daysSinceChange >= OIL_CHANGE_INTERVAL_DAYS) {
+        // Overdue - send immediate notification
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: 1,
+              title: '🚨 تغيير الزيت متأخر!',
+              body: 'لقد تجاوزت 6 أشهر منذ آخر تغيير. قم بتغيير الزيت الآن!',
+              schedule: { at: new Date(Date.now() + 1000) } // Now
+            }
+          ]
+        });
+        console.log('🔔 Sent overdue notification');
+      } else if (daysSinceChange >= WARNING_DAYS) {
+        // Warning - approaching due date
+        const daysLeft = OIL_CHANGE_INTERVAL_DAYS - daysSinceChange;
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: 2,
+              title: '⚠️ تذكير: تغيير الزيت قريباً',
+              body: `يجب تغيير الزيت خلال ${daysLeft} يوم`,
+              schedule: { at: new Date(Date.now() + 1000) }
+            }
+          ]
+        });
+        console.log(`🔔 Sent warning notification (${daysLeft} days left)`);
+      }
+
+      // Schedule notification for exactly 6 months mark
+      if (nextChangeDate > today) {
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: 3,
+              title: '⏰ حان وقت تغيير الزيت!',
+              body: 'مرت 6 أشهر منذ آخر تغيير زيت. قم بتغيير الزيت الآن للحفاظ على محرك سيارتك.',
+              schedule: { at: nextChangeDate }
+            }
+          ]
+        });
+        console.log(`📅 Scheduled notification for: ${nextChangeDate.toLocaleDateString('ar-DZ')}`);
+      }
+    } catch (error) {
+      console.error('❌ Error scheduling notifications:', error);
+    }
+  };
+
+  // Check notification permissions and setup
+  const checkAndSetupNotifications = async () => {
+    if (!isNotificationAvailable()) {
+      console.log('📱 Notifications not available');
       return;
     }
 
     const hasPermission = await checkNotificationPermissions();
     setNotificationsEnabled(hasPermission);
-
-    if (hasPermission && data.lastChangeDate) {
-      // Schedule reminders
-      await scheduleOilChangeReminders(
-        data.lastChangeDate,
-        data.currentKm,
-        data.lastChangeKm
-      );
-    }
   };
 
   // Request notification permissions
@@ -97,348 +200,624 @@ export default function OilTrackerPage() {
     setNotificationsEnabled(granted);
     
     if (granted) {
-      alert('✅ تم تفعيل الإشعارات بنجاح!');
-      // Schedule notifications
-      if (carData.lastChangeDate) {
-        await scheduleOilChangeReminders(
-          carData.lastChangeDate,
-          carData.currentKm,
-          carData.lastChangeKm
-        );
+      toast.success('✅ تم تفعيل الإشعارات بنجاح!');
+      // Reload to schedule notifications
+      if (oilChanges.length > 0) {
+        scheduleNotificationsFromRecords(oilChanges);
       }
     } else {
-      alert('❌ لم يتم السماح بالإشعارات');
+      toast.error('❌ لم يتم السماح بالإشعارات');
     }
   };
 
-  // Save data to localStorage
-  const saveData = (data: CarData) => {
-    if (user) {
-      localStorage.setItem(`oil-tracker-${user.email}`, JSON.stringify(data));
-      setCarData(data);
+  // Test notification
+  const handleTestNotification = async () => {
+    if (!isNotificationAvailable()) {
+      toast.error('⚠️ الإشعارات متاحة فقط على الهاتف');
+      return;
+    }
+
+    const hasPermission = await checkNotificationPermissions();
+    if (!hasPermission) {
+      toast.error('⚠️ يجب تفعيل الإشعارات أولاً');
+      return;
+    }
+
+    try {
+      await LocalNotifications.schedule({
+        notifications: [
+          {
+            id: 999,
+            title: '🧪 اختبار الإشعارات',
+            body: 'نظام الإشعارات يعمل بشكل صحيح! ✅',
+            schedule: { at: new Date(Date.now() + 2000) } // After 2 seconds
+          }
+        ]
+      });
+      toast.success('✅ تم إرسال إشعار تجريبي');
+    } catch (error) {
+      console.error('❌ Error testing notification:', error);
+      toast.error('❌ فشل إرسال الإشعار');
+    }
+  };
+
+  // Reset all data (when selling car)
+  const handleResetAll = async () => {
+    const confirmMessage = '⚠️ هل أنت متأكد من إعادة تهيئة كل البيانات؟\n\nسيتم حذف:\n• جميع سجلات تغيير الزيت\n• معلومات السيارة\n• جميع الإشعارات\n\nهذا الإجراء لا يمكن التراجع عنه!\n\nاستخدم هذا عند بيع السيارة والبدء مع سيارة جديدة.';
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    // Second confirmation
+    if (!confirm('تأكيد نهائي: هل تريد حذف كل البيانات؟')) {
+      return;
+    }
+
+    try {
+      console.log('🔄 Resetting all data...');
+      
+      // Delete all oil change records
+      const deletePromises = oilChanges.map(record => 
+        fetch(`/api/oil-change?id=${record.id}`, { method: 'DELETE' })
+      );
+      
+      await Promise.all(deletePromises);
+      
+      // Cancel all notifications
+      if (isNotificationAvailable()) {
+        await LocalNotifications.cancel({ 
+          notifications: [
+            { id: 1 }, { id: 2 }, { id: 3 }, { id: 999 }
+          ] 
+        });
+      }
+      
+      // Clear local state
+      setOilChanges([]);
+      setCarInfo({ model: '', purchaseDate: '' });
+      setFormData({
+        changeDate: new Date().toISOString().split('T')[0],
+        kilometersDone: '',
+        notes: ''
+      });
+      
+      toast.success('✅ تم إعادة تهيئة كل البيانات بنجاح!');
+      console.log('✅ All data reset successfully');
+      
+    } catch (error) {
+      console.error('❌ Error resetting data:', error);
+      toast.error('❌ فشلت إعادة التهيئة');
     }
   };
 
   // Calculate days since last change
   const daysSinceChange = () => {
-    if (!carData.lastChangeDate) return 0;
-    const lastChange = new Date(carData.lastChangeDate);
+    if (oilChanges.length === 0) return 0;
+    const lastChange = new Date(oilChanges[0].changeDate);
     const today = new Date();
     const diff = today.getTime() - lastChange.getTime();
     return Math.floor(diff / (1000 * 60 * 60 * 24));
   };
 
-  // Calculate km since last change
-  const kmSinceChange = () => {
-    return carData.currentKm - carData.lastChangeKm;
-  };
-
-  // Get status
+  // Get status based on TIME (6 months = 180 days)
   const getStatus = () => {
     const days = daysSinceChange();
-    const km = kmSinceChange();
     
-    if (days >= 180 || km >= 5000) return 'overdue';
-    if (days >= 150 || km >= 4500) return 'warning';
-    return 'good';
+    if (days >= 180) return 'overdue'; // Over 6 months
+    if (days >= 150) return 'warning'; // 5 months (warning)
+    return 'good'; // Less than 5 months
   };
 
-  // Handle oil change
-  const handleOilChange = async () => {
-    if (!newKm || parseInt(newKm) <= 0) {
-      alert(t('oilTracker.updateKm'));
+  // Get next oil change date (6 months after last change)
+  const getNextOilChangeDate = () => {
+    if (oilChanges.length === 0) return null;
+    const lastChange = new Date(oilChanges[0].changeDate);
+    const nextChange = new Date(lastChange);
+    nextChange.setMonth(nextChange.getMonth() + 6); // Add 6 months
+    return nextChange;
+  };
+
+  // Get status color
+  const getStatusColor = () => {
+    const status = getStatus();
+    if (status === 'overdue') return 'text-red-600 bg-red-100 dark:bg-red-900 dark:text-red-100';
+    if (status === 'warning') return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-100';
+    return 'text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-100';
+  };
+
+  // Get status text
+  const getStatusText = () => {
+    const status = getStatus();
+    if (status === 'overdue') return '🚨 متأخر - قم بتغيير الزيت الآن!';
+    if (status === 'warning') return '⚠️ تحذير - اقترب موعد التغيير';
+    return '✅ جيد';
+  };
+
+  // Save car info (first time only)
+  const handleSaveCarInfo = async () => {
+    if (!carInfo.model || !carInfo.purchaseDate) {
+      toast.error('⚠️ يرجى ملء نموذج السيارة وتاريخ الشراء');
       return;
     }
 
-    const change: OilChange = {
-      date: new Date().toISOString().split('T')[0],
-      km: parseInt(newKm),
-      notes: notes
-    };
+    // Car info will be saved with first oil change
+    toast.success('✅ تم حفظ معلومات السيارة!');
+  };
 
-    const updatedData = {
-      ...carData,
-      currentKm: parseInt(newKm),
-      lastChangeDate: change.date,
-      lastChangeKm: change.km,
-      changes: [change, ...carData.changes]
-    };
-
-    saveData(updatedData);
-    setNewKm('');
-    setNotes('');
-    
-    // Reschedule notifications
-    if (notificationsEnabled) {
-      await scheduleOilChangeReminders(
-        change.date,
-        change.km,
-        change.km
-      );
+  // Handle adding new oil change record
+  const handleAddOilChange = async () => {
+    // Check car info for first record
+    if (oilChanges.length === 0 && (!carInfo.model || !carInfo.purchaseDate)) {
+      toast.error('⚠️ يرجى إدخال معلومات السيارة أولاً');
+      return;
     }
-    
-    alert('✅ ' + t('oilTracker.oilChanged'));
+
+    if (!formData.changeDate || !formData.kilometersDone) {
+      toast.error('⚠️ يرجى ملء التاريخ والكيلومترات');
+      return;
+    }
+
+    const km = parseInt(formData.kilometersDone);
+    if (isNaN(km) || km <= 0) {
+      toast.error('⚠️ يرجى إدخال كيلومترات صحيحة');
+      return;
+    }
+
+    try {
+      console.log('📝 Creating new oil change record...');
+      const response = await fetch('/api/oil-change', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          carModel: carInfo.model || null,
+          purchaseDate: carInfo.purchaseDate || null,
+          changeDate: formData.changeDate,
+          kilometersDone: km,
+          notes: formData.notes || null
+        })
+      });
+
+      if (response.ok) {
+        const newRecord = await response.json();
+        console.log('✅ Oil change record created:', newRecord);
+        toast.success('✅ تم إضافة السجل بنجاح!');
+        
+        // Reset form (keep car info)
+        setFormData({
+          changeDate: new Date().toISOString().split('T')[0],
+          kilometersDone: '',
+          notes: ''
+        });
+        
+        // Reload records
+        await loadOilChanges();
+        
+        // Switch to dashboard
+        setActiveTab('dashboard');
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Failed to create record:', errorData);
+        toast.error(`❌ فشل الإضافة: ${errorData.error || 'خطأ غير معروف'}`);
+      }
+    } catch (error) {
+      console.error('❌ Error creating record:', error);
+      toast.error('❌ حدث خطأ أثناء الإضافة');
+    }
   };
 
-  // Handle update km
-  const handleUpdateKm = () => {
-    if (!newKm || parseInt(newKm) <= 0) return;
+  // Handle delete oil change record
+  const handleDeleteOilChange = async (id: string) => {
+    const confirmMessage = 'هل تريد حذف هذا السجل؟\n\n⚠️ لا يمكن التراجع عن هذا الإجراء!';
     
-    const updatedData = {
-      ...carData,
-      currentKm: parseInt(newKm)
-    };
-    
-    saveData(updatedData);
-    setNewKm('');
-  };
+    if (!confirm(confirmMessage)) return;
 
-  // Handle save info
-  const handleSaveInfo = (field: keyof CarData, value: any) => {
-    const updatedData = {
-      ...carData,
-      [field]: value
-    };
-    saveData(updatedData);
+    try {
+      console.log('🗑️ Deleting oil change record:', id);
+      const response = await fetch(`/api/oil-change?id=${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        console.log('✅ Record deleted');
+        toast.success('✅ تم حذف السجل بنجاح!');
+        
+        // Reload records
+        await loadOilChanges();
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Failed to delete:', errorData);
+        toast.error(`❌ فشل الحذف: ${errorData.error || 'خطأ غير معروف'}`);
+      }
+    } catch (error) {
+      console.error('❌ Error deleting:', error);
+      toast.error('❌ حدث خطأ أثناء الحذف');
+    }
   };
 
   if (authLoading || loading) {
     return <Loading />;
   }
 
+  const nextChange = getNextOilChangeDate();
   const status = getStatus();
-  const statusColors = {
-    good: 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100',
-    warning: 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100',
-    overdue: 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
-  };
-
-  const statusText = {
-    good: t('oilTracker.good'),
-    warning: t('oilTracker.warning'),
-    overdue: t('oilTracker.overdue')
-  };
+  const days = daysSinceChange();
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+      <Toaster position="top-center" />
+      
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => router.back()}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mb-4"
-          >
-            ← {t('common.back')}
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            🛢️ {t('oilTracker.title')}
-          </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-            {t('oilTracker.recommended')}
-          </p>
-          
-          {/* Notification Status */}
-          {isNotificationAvailable() && (
-            <div className="mt-4 flex items-center gap-3">
-              {notificationsEnabled ? (
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                  <span className="text-xl">🔔</span>
-                  <span className="text-sm font-medium">الإشعارات مفعلة</span>
-                </div>
-              ) : (
-                <Button
-                  onClick={handleEnableNotifications}
-                  variant="outline"
-                  size="sm"
-                  className="text-sm"
-                >
-                  🔕 تفعيل الإشعارات
-                </Button>
-              )}
-              <Button
-                onClick={sendTestNotification}
-                variant="outline"
-                size="sm"
-                className="text-sm"
-              >
-                🧪 اختبار الإشعار
-              </Button>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                🛢️ متتبع تغيير الزيت
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                نظام ذكي لتتبع تغيير زيت المحرك بناءً على الوقت (كل 6 أشهر)
+              </p>
             </div>
-          )}
+            <button
+              onClick={() => router.push('/')}
+              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              ← العودة
+            </button>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {isNotificationAvailable() && (
+              <>
+                {!notificationsEnabled ? (
+                  <button
+                    onClick={handleEnableNotifications}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    🔔 تفعيل الإشعارات
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleTestNotification}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                  >
+                    🧪 اختبار الإشعارات
+                  </button>
+                )}
+              </>
+            )}
+            
+            {oilChanges.length > 0 && (
+              <button
+                onClick={handleResetAll}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+              >
+                🔄 إعادة تهيئة (بيع السيارة)
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-800">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === 'dashboard'
-                ? 'text-gray-900 dark:text-gray-100 border-b-2 border-gray-900 dark:border-gray-100'
-                : 'text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-          >
-            {t('oilTracker.dashboard')}
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === 'history'
-                ? 'text-gray-900 dark:text-gray-100 border-b-2 border-gray-900 dark:border-gray-100'
-                : 'text-gray-500 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-            }`}
-          >
-            {t('oilTracker.history')} ({carData.changes.length})
-          </button>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6">
+          <div className="flex border-b border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`flex-1 px-4 py-3 font-medium transition-colors ${
+                activeTab === 'dashboard'
+                  ? 'text-gray-900 dark:text-gray-100 border-b-2 border-gray-900 dark:border-gray-100'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              📊 لوحة التحكم
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`flex-1 px-4 py-3 font-medium transition-colors ${
+                activeTab === 'history'
+                  ? 'text-gray-900 dark:text-gray-100 border-b-2 border-gray-900 dark:border-gray-100'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              📜 السجل
+            </button>
+            <button
+              onClick={() => setActiveTab('add')}
+              className={`flex-1 px-4 py-3 font-medium transition-colors ${
+                activeTab === 'add'
+                  ? 'text-gray-900 dark:text-gray-100 border-b-2 border-gray-900 dark:border-gray-100'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              ➕ إضافة جديد
+            </button>
+          </div>
         </div>
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             {/* Status Card */}
-            <div className={`p-6 rounded-lg ${statusColors[status]}`}>
-              <h2 className="text-xl font-bold mb-4">{t('oilTracker.status')}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm opacity-70">{t('oilTracker.daysSinceChange')}</p>
-                  <p className="text-2xl font-bold">{daysSinceChange()} {t('oilTracker.days')}</p>
-                </div>
-                <div>
-                  <p className="text-sm opacity-70">{t('oilTracker.kmSinceChange')}</p>
-                  <p className="text-2xl font-bold">{kmSinceChange()} {t('oilTracker.km')}</p>
-                </div>
-                <div>
-                  <p className="text-sm opacity-70">{t('oilTracker.totalChanges')}</p>
-                  <p className="text-2xl font-bold">{carData.changes.length} {t('oilTracker.times')}</p>
-                </div>
-              </div>
-              <div className="mt-4 text-center">
-                <p className="text-lg font-semibold">{statusText[status]}</p>
-              </div>
-            </div>
-
-            {/* Car Info */}
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-800">
-              <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-                {t('oilTracker.carInfo')}
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('oilTracker.carModel')}
-                  </label>
-                  <Input
-                    value={carData.model}
-                    onChange={(e) => handleSaveInfo('model', e.target.value)}
-                    placeholder="Toyota Corolla 2020"
-                    className="bg-gray-50 dark:bg-gray-800"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('oilTracker.purchaseDate')}
-                  </label>
-                  <Input
-                    type="date"
-                    value={carData.purchaseDate}
-                    onChange={(e) => handleSaveInfo('purchaseDate', e.target.value)}
-                    className="bg-gray-50 dark:bg-gray-800"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('oilTracker.currentKm')}
-                  </label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      value={newKm}
-                      onChange={(e) => setNewKm(e.target.value)}
-                      placeholder={carData.currentKm.toString()}
-                      className="bg-gray-50 dark:bg-gray-800"
-                    />
-                    <Button onClick={handleUpdateKm} variant="outline">
-                      {t('oilTracker.updateKm')}
-                    </Button>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-                    {t('oilTracker.currentKm')}: {carData.currentKm} {t('oilTracker.km')}
+            {oilChanges.length > 0 ? (
+              <>
+                <div className={`rounded-lg p-6 ${getStatusColor()}`}>
+                  <h2 className="text-2xl font-bold mb-2">
+                    {getStatusText()}
+                  </h2>
+                  <p className="text-lg">
+                    مرت <strong>{days} يوم</strong> منذ آخر تغيير زيت
                   </p>
+                  {nextChange && (
+                    <p className="text-sm mt-2">
+                      التغيير القادم: <strong>{nextChange.toLocaleDateString('ar-DZ', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}</strong>
+                    </p>
+                  )}
                 </div>
-              </div>
-            </div>
 
-            {/* Oil Change Action */}
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-800">
-              <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-                {t('oilTracker.oilChanged')}
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('oilTracker.currentKm')}
-                  </label>
-                  <Input
-                    type="number"
-                    value={newKm}
-                    onChange={(e) => setNewKm(e.target.value)}
-                    placeholder={carData.currentKm.toString()}
-                    className="bg-gray-50 dark:bg-gray-800"
-                  />
+                {/* Latest Oil Change Info */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                    📝 آخر تغيير زيت
+                  </h3>
+                  <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                    <p>
+                      <strong>التاريخ:</strong> {new Date(oilChanges[0].changeDate).toLocaleDateString('ar-DZ')}
+                    </p>
+                    <p>
+                      <strong>الكيلومترات:</strong> {oilChanges[0].kilometersDone.toLocaleString('ar-DZ')} كم
+                    </p>
+                    {oilChanges[0].carModel && (
+                      <p>
+                        <strong>موديل السيارة:</strong> {oilChanges[0].carModel}
+                      </p>
+                    )}
+                    {oilChanges[0].notes && (
+                      <p>
+                        <strong>ملاحظات:</strong> {oilChanges[0].notes}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('oilTracker.notes')}
-                  </label>
-                  <Input
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder={t('oilTracker.addNotes')}
-                    className="bg-gray-50 dark:bg-gray-800"
-                  />
-                </div>
+              </>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
+                <p className="text-xl text-gray-500 dark:text-gray-400 mb-4">
+                  لا توجد سجلات حتى الآن
+                </p>
                 <Button
-                  onClick={handleOilChange}
-                  className="w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200"
+                  onClick={() => setActiveTab('add')}
+                  className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900"
                 >
-                  ✅ {t('oilTracker.oilChanged')}
+                  ➕ إضافة أول سجل
                 </Button>
               </div>
+            )}
+
+            {/* Notifications Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                🔔 الإشعارات
+              </h3>
+              
+              {!isNotificationAvailable() ? (
+                <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+                    📱 <strong>الإشعارات متوفرة فقط على التطبيق!</strong>
+                    <br />
+                    قم بتحميل التطبيق على هاتفك للحصول على تنبيهات تلقائية عند اقتراب موعد تغيير الزيت.
+                  </p>
+                </div>
+              ) : notificationsEnabled ? (
+                <div className="text-green-600 dark:text-green-400">
+                  ✅ الإشعارات مفعّلة - سنذكرك عندما يحين موعد تغيير الزيت
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    قم بتفعيل الإشعارات لتلقي تنبيهات تلقائية عند اقتراب موعد تغيير الزيت
+                  </p>
+                  <Button
+                    onClick={handleEnableNotifications}
+                    className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900"
+                  >
+                    🔔 تفعيل الإشعارات
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Info Card */}
+            <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-6">
+              <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-2">
+                💡 معلومة مهمة
+              </h3>
+              <p className="text-blue-800 dark:text-blue-200 text-sm">
+                • النظام يعتمد على <strong>الوقت</strong> وليس الكيلومترات<br />
+                • يُنصح بتغيير الزيت كل <strong>6 أشهر (180 يوم)</strong><br />
+                • التنبيه يبدأ قبل 30 يوم من الموعد<br />
+                • جميع البيانات محفوظة في السيرفر ومتزامنة
+              </p>
             </div>
           </div>
         )}
 
         {/* History Tab */}
         {activeTab === 'history' && (
-          <div className="space-y-4">
-            {carData.changes.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-500">
-                {t('oilTracker.noHistory')}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+              📜 سجل تغييرات الزيت
+            </h2>
+            
+            {oilChanges.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                لا توجد سجلات
               </div>
             ) : (
-              carData.changes.map((change, index) => (
-                <div
-                  key={index}
-                  className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-800"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {t('oilTracker.changeNumber')} {carData.changes.length - index}
-                    </h3>
-                    <span className="text-sm text-gray-500 dark:text-gray-500">
-                      {new Date(change.date).toLocaleDateString()}
-                    </span>
+              <div className="space-y-4">
+                {oilChanges.map((change) => (
+                  <div
+                    key={change.id}
+                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-bold text-gray-900 dark:text-gray-100">
+                          {new Date(change.changeDate).toLocaleDateString('ar-DZ', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {change.kilometersDone.toLocaleString('ar-DZ')} كم
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteOilChange(change.id)}
+                        className="text-red-600 hover:text-red-700 text-sm"
+                      >
+                        🗑️ حذف
+                      </button>
+                    </div>
+                    {change.carModel && (
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        🚗 {change.carModel}
+                      </p>
+                    )}
+                    {change.notes && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                        📝 {change.notes}
+                      </p>
+                    )}
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300">
-                    {change.km} {t('oilTracker.km')}
-                  </p>
-                  {change.notes && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                      📝 {change.notes}
-                    </p>
-                  )}
-                </div>
-              ))
+                ))}
+              </div>
             )}
+          </div>
+        )}
+
+        {/* Add Tab */}
+        {activeTab === 'add' && (
+          <div className="space-y-6">
+            {/* Car Info Section (First Time Only) */}
+            {oilChanges.length === 0 && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                <h2 className="text-xl font-bold text-blue-900 dark:text-blue-100 mb-4">
+                  🚗 معلومات السيارة (تُكتب مرة واحدة فقط)
+                </h2>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
+                  سيتم استخدام هذه المعلومات لجميع السجلات المستقبلية
+                </p>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                      موديل السيارة <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      value={carInfo.model}
+                      onChange={(e) => setCarInfo({ ...carInfo, model: e.target.value })}
+                      placeholder="مثال: Renault Clio 2020"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                      تاريخ شراء السيارة <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="date"
+                      value={carInfo.purchaseDate}
+                      onChange={(e) => setCarInfo({ ...carInfo, purchaseDate: e.target.value })}
+                      max={new Date().toISOString().split('T')[0]}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Display Saved Car Info */}
+            {oilChanges.length > 0 && carInfo.model && (
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  🚗 معلومات السيارة المحفوظة
+                </h3>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <strong>الموديل:</strong> {carInfo.model}
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <strong>تاريخ الشراء:</strong> {new Date(carInfo.purchaseDate).toLocaleDateString('ar-DZ')}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  💡 لتغيير معلومات السيارة، استخدم زر "إعادة تهيئة" عند بيع السيارة
+                </p>
+              </div>
+            )}
+
+            {/* Oil Change Form */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
+                ➕ إضافة سجل تغيير زيت جديد
+              </h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    تاريخ تغيير الزيت <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="date"
+                    value={formData.changeDate}
+                    onChange={(e) => setFormData({ ...formData, changeDate: e.target.value })}
+                    max={new Date().toISOString().split('T')[0]}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    الكيلومترات عند التغيير <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="number"
+                    value={formData.kilometersDone}
+                    onChange={(e) => setFormData({ ...formData, kilometersDone: e.target.value })}
+                    placeholder="مثال: 45000"
+                    min="0"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    ملاحظات (اختياري)
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                    rows={3}
+                    placeholder="أي ملاحظات إضافية..."
+                  />
+                </div>
+
+                <Button
+                  onClick={handleAddOilChange}
+                  className="w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-3 text-lg"
+                >
+                  ✅ حفظ السجل
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
