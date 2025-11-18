@@ -1,7 +1,7 @@
 import * as React from "react";
 import { MessagesSquare, History } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import NextImage from "next/image";
 import {
   Sidebar,
   SidebarContent,
@@ -35,9 +35,9 @@ function Logo() {
     >
       <div className="relative flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
         <div className="relative w-16 h-16 rounded-xl overflow-hidden shadow-lg bg-white ring-2 ring-gray-200 dark:ring-gray-700 group-hover:ring-gray-300 dark:group-hover:ring-gray-600 transition-all">
-          <Image
+          <NextImage
             src="/logo.png"
-            alt="Mechanic AI Logo"
+            alt="MechaMind Logo"
             fill
             className="object-contain p-2"
             priority

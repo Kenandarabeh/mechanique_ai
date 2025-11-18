@@ -8,13 +8,11 @@ export function DynamicTitle() {
 
   useEffect(() => {
     // Update document title based on locale
-    const titles = {
-      ar: '🔧 مساعد الميكانيك الذكي',
-      en: '🔧 Mechanic AI',
-      fr: '🔧 Assistant Mécanicien',
-    };
-
-    document.title = titles[locale as keyof typeof titles] || titles.ar;
+  const titles: Record<string, string> = {
+    en: '🔧 MechaMind',
+    fr: '🔧 MechaMind',
+    ar: '🔧 MechaMind',
+  };    document.title = titles[locale as keyof typeof titles] || titles.ar;
   }, [locale]);
 
   return null; // This component doesn't render anything

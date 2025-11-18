@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n";
 import { getApiUrl } from "@/lib/config";
 import { useAuth } from "@/contexts/auth-context";
+import Loading from "@/components/ui/loading";
 
 interface Chat {
   id: string;
@@ -70,16 +71,7 @@ export function SavedChatsList() {
 
 
   if (isLoading) {
-    return (
-      <div className="space-y-2 px-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-2 rounded-lg px-3 py-2">
-            <Skeleton className="h-4 w-4 rounded" />
-            <Skeleton className="h-4 flex-1" />
-          </div>
-        ))}
-      </div>
-    );
+    return <Loading fullScreen={false} size="sm" />;
   }
 
   if (chats.length === 0) {

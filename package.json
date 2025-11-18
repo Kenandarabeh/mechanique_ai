@@ -30,6 +30,7 @@
     "@capacitor/android": "^7.4.4",
     "@capacitor/cli": "^7.4.4",
     "@capacitor/core": "^7.4.4",
+    "@capacitor/local-notifications": "^7.0.3",
     "@clerk/localizations": "^3.28.0",
     "@clerk/nextjs": "^6.35.1",
     "@google/generative-ai": "^0.24.1",

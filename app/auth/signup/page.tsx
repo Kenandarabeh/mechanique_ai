@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import NextImage from "next/image";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function SignUpPage() {
   const texts = {
     ar: {
       title: "إنشاء حساب جديد",
-      subtitle: "انضم إلى مساعد الميكانيك الذكي",
+      subtitle: "انضم إلى MechaMind",
       email: "البريد الإلكتروني",
       password: "كلمة المرور",
       name: "الاسم (اختياري)",
@@ -43,7 +44,7 @@ export default function SignUpPage() {
     },
     en: {
       title: "Create Account",
-      subtitle: "Join Mechanic AI Assistant",
+      subtitle: "Join MechaMind",
       email: "Email",
       password: "Password",
       name: "Name (optional)",
@@ -60,7 +61,7 @@ export default function SignUpPage() {
     },
     fr: {
       title: "Créer un compte",
-      subtitle: "Rejoignez l'assistant mécanicien IA",
+      subtitle: "Rejoignez MechaMind",
       email: "Email",
       password: "Mot de passe",
       name: "Nom (optionnel)",
@@ -208,9 +209,14 @@ export default function SignUpPage() {
       <div className="w-full max-w-md p-8">
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
-            <svg className="h-16 w-16 text-gray-900 dark:text-gray-100" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-            </svg>
+            <div className="relative w-20 h-20">
+              <NextImage
+                src="/logo.png"
+                alt="Logo"
+                fill
+                className="object-contain"
+              />
+            </div>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t.title}</h1>
           <p className="mt-2 text-muted-foreground">{t.subtitle}</p>

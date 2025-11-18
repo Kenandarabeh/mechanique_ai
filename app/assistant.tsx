@@ -18,10 +18,12 @@ import {
 } from "@/components/ui/sidebar";
 import { ThreadListSidebar } from "@/components/assistant-ui/threadlist-sidebar";
 import { Separator } from "@/components/ui/separator";
+import NextImage from "next/image";
 import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { getApiUrl } from "@/lib/config";
+import Loading from "@/components/ui/loading";
 
 interface AssistantProps {
   chatId?: string;
@@ -397,14 +399,7 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
 
   // Show loading state
   if (isLoadingChat) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-gray-100 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{t('loading.chat')}</p>
-        </div>
-      </div>
-    );
+    return <Loading text={t('loading.chat')} />;
   }
 
   return (
@@ -424,12 +419,21 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
               
               <div className="flex items-center gap-3 flex-1">
                 <div className="flex items-center gap-2">
-                  <svg className="w-8 h-8 text-gray-900 dark:text-gray-100" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
-                  </svg>
-                  <div>
-                    <h1 className="font-bold text-lg text-gray-900 dark:text-gray-100">🔧 {t('header.title')}</h1>
+                  <div className="relative w-10 h-10 flex-shrink-0">
+                    <NextImage
+                      src="/logo.png"
+                      alt="Logo"
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <div className="hidden sm:block">
+                    <h1 className="font-bold text-lg text-gray-900 dark:text-gray-100">{t('header.title')}</h1>
                     <p className="text-xs text-muted-foreground">{t('header.subtitle')}</p>
+                  </div>
+                  <div className="sm:hidden">
+                    <h1 className="font-semibold text-[11px] leading-tight text-gray-900 dark:text-gray-100">MechaMind</h1>
+                    <p className="text-[9px] leading-tight text-muted-foreground">مساعدك الذكي للميكانيك</p>
                   </div>
                 </div>
               </div>
@@ -439,7 +443,17 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
                 <Separator orientation="vertical" className="h-4" />
                 {isMounted && user && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">{user.name || user.email}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => router.push('/oil-tracker')}
+                      title={t('oilTracker.title')}
+                      className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      <span className="text-xl">🛢️</span>
+                    </Button>
+                    <Separator orientation="vertical" className="h-4" />
+                    <span className="text-sm text-muted-foreground hidden sm:inline">{user.name || user.email}</span>
                     <Button
                       variant="ghost"
                       size="icon"

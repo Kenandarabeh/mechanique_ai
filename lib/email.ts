@@ -9,9 +9,9 @@ export async function sendVerificationEmail(email: string, code: string): Promis
 
     // Send email using Resend
     const { data, error } = await resend.emails.send({
-      from: 'Mechanique AI <onboarding@resend.dev>',
+      from: 'MechaMind <onboarding@resend.dev>',
       to: email,
-      subject: 'رمز التحقق - Mechanique AI',
+      subject: 'رمز التحقق - MechaMind',
       html: `
         <!DOCTYPE html>
         <html dir="rtl" lang="ar">
@@ -26,18 +26,18 @@ export async function sendVerificationEmail(email: string, code: string): Promis
                 <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                   <!-- Header -->
                   <tr>
-                    <td style="background: linear-gradient(135deg, #black 0%, #1e40af 100%); padding: 40px 20px; text-align: center;">
-                      <h1 style="color: #ffffff; margin: 0; font-size: 28px;">🔧 Mechanique AI</h1>
-                      <p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 16px;">مساعد الميكانيك الذكي</p>
-                    </td>
+                                      <div style="text-align: center; padding: 30px 20px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%);">
+                      <h1 style="color: #ffffff; margin: 0; font-size: 28px;">🔧 MechaMind</h1>
+                      <p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 16px;">مساعدك الذكي للميكانيك</p>
+                  </div>
                   </tr>
                   
                   <!-- Body -->
                   <tr>
                     <td style="padding: 40px 30px;">
                       <h2 style="color: #1f2937; margin: 0 0 20px 0; font-size: 24px; text-align: center;">مرحبًا بك! 👋</h2>
-                      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0; text-align: center;">
-                        شكرًا لتسجيلك في Mechanique AI. استخدم الرمز التالي لتأكيد حسابك:
+                      <p style="color: #475569; margin: 0 0 20px 0; font-size: 16px; line-height: 1.5;">
+                        شكرًا لتسجيلك في MechaMind. استخدم الرمز التالي لتأكيد حسابك:
                       </p>
                       
                       <!-- OTP Code -->
@@ -65,9 +65,11 @@ export async function sendVerificationEmail(email: string, code: string): Promis
                   <!-- Footer -->
                   <tr>
                     <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-                      <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                        © 2025 Mechanique AI. جميع الحقوق محفوظة.
+                                        <div style="text-align: center; padding: 20px; background-color: #f1f5f9; border-top: 1px solid #e2e8f0;">
+                      <p style="color: #64748b; margin: 0; font-size: 14px;">
+                        © 2025 MechaMind. جميع الحقوق محفوظة.
                       </p>
+                  </div>
                     </td>
                   </tr>
                 </table>

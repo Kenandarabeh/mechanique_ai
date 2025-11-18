@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n";
+import Loading from "@/components/ui/loading";
 
 export const ThreadList: FC = () => {
   return (
@@ -39,7 +40,7 @@ const ThreadListItems: FC = () => {
   const isLoading = useAssistantState(({ threads }) => threads.isLoading);
 
   if (isLoading) {
-    return <ThreadListSkeleton />;
+    return <Loading fullScreen={false} size="sm" />;
   }
 
   return <ThreadListPrimitive.Items components={{ ThreadListItem }} />;

@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.mechanique.ai',
-  appName: 'Mechanique AI',
+  appName: 'MechaMind',
   webDir: 'out',
   server: {
     // Use your deployed Vercel URL

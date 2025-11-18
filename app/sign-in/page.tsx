@@ -15,17 +15,17 @@ function SignInContent() {
   const getTexts = () => {
     if (locale === 'ar') {
       return {
-        title: "مساعد الميكانيك الذكي",
+        title: "MechaMind",
         subtitle: "سجل دخولك للوصول إلى مساعدك الشخصي"
       };
     } else if (locale === 'fr') {
       return {
-        title: "Assistant Mécanicien",
+        title: "MechaMind",
         subtitle: "Connectez-vous pour accéder à votre assistant personnel"
       };
     } else {
       return {
-        title: "Mechanic AI",
+        title: "MechaMind",
         subtitle: "Sign in to access your personal assistant"
       };
     }

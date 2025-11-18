@@ -14,9 +14,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "🔧 مساعد الميكانيك الذكي | Mechanic AI | Assistant Mécanicien",
-  description: "مساعدك الشخصي لصيانة وإصلاح السيارات | Your personal car maintenance and repair assistant | Votre assistant personnel pour l'entretien et la réparation automobile",
-  applicationName: "مساعد الميكانيك الذكي",
+  title: "🔧 MechaMind | مساعدك الذكي للميكانيك",
+  description: "مساعدك الذكي لصيانة وإصلاح السيارات | Your smart assistant for car maintenance and repair | Votre assistant intelligent pour l'entretien et la réparation automobile",
+  applicationName: "MechaMind",
+  authors: [{ name: "MechaMind Team" }],
 };
 
 export default function RootLayout({

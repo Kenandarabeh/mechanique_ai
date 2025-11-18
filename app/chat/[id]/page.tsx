@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { Assistant } from "@/app/assistant";
 import { useEffect } from "react";
 import { useTranslation } from "@/lib/i18n";
+import Loading from "@/components/ui/loading";
 
 export default function ChatPage() {
   console.log("🔷 ChatPage Component - Loaded");
@@ -27,26 +28,12 @@ export default function ChatPage() {
 
   // Show loading while checking auth
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-gray-100 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{t('common.loading')}</p>
-        </div>
-      </div>
-    );
+    return <Loading text={t('common.loading')} />;
   }
 
   // Show loading if not authenticated (will redirect)
   if (!user) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-gray-100 mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{t('loading.chat')}</p>
-        </div>
-      </div>
-    );
+    return <Loading text={t('loading.chat')} />;
   }
 
   console.log("▶️ عرض مكون Assistant مع chatId:", chatId);

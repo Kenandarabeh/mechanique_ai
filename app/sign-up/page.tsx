@@ -15,17 +15,17 @@ function SignUpContent() {
   const getTexts = () => {
     if (locale === 'ar') {
       return {
-        title: "مساعد الميكانيك الذكي",
+        title: "MechaMind",
         subtitle: "أنشئ حسابك للبدء في استخدام المساعد"
       };
     } else if (locale === 'fr') {
       return {
-        title: "Assistant Mécanicien",
+        title: "MechaMind",
         subtitle: "Créez votre compte pour commencer à utiliser l'assistant"
       };
     } else {
       return {
-        title: "Mechanic AI",
+        title: "MechaMind",
         subtitle: "Create your account to start using the assistant"
       };
     }

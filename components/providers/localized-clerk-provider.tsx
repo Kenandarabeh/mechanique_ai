@@ -19,7 +19,7 @@ export function LocalizedClerkProvider({ children }: { children: ReactNode }) {
 
   // Get the appropriate localization with custom app name
   const getLocalization = () => {
-    const appName = locale === 'ar' ? 'مساعد الميكانيك الذكي' : 'Mechanic AI';
+    const appName = 'MechaMind';
     
     let baseLocalization;
     if (locale === 'ar') baseLocalization = arSA;
