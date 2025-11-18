@@ -38,6 +38,7 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const [chatId, setChatId] = useState<string | undefined>(initialChatId);
   const [isMounted, setIsMounted] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   console.log("🔷 Assistant Component - Initialize");
   console.log("Chat ID:", chatId || "NEW");
@@ -48,6 +49,16 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Check admin status
+  useEffect(() => {
+    if (user) {
+      fetch('/api/admin/check')
+        .then(res => res.json())
+        .then(data => setIsAdmin(data.isAdmin))
+        .catch(() => setIsAdmin(false));
+    }
+  }, [user]);
 
   // Update chatId when prop changes
   useEffect(() => {
@@ -452,6 +463,20 @@ export const Assistant = ({ chatId: initialChatId }: AssistantProps = {}) => {
                     >
                       <span className="text-xl">🛢️</span>
                     </Button>
+                    {isAdmin && (
+                      <>
+                        <Separator orientation="vertical" className="h-4" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => router.push('/admin')}
+                          title="Admin Panel"
+                          className="hover:bg-gray-100 dark:hover:bg-gray-800"
+                        >
+                          <span className="text-xl">⚙️</span>
+                        </Button>
+                      </>
+                    )}
                     <Separator orientation="vertical" className="h-4" />
                     <span className="text-sm text-muted-foreground hidden sm:inline">{user.name || user.email}</span>
                     <Button

@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
 
     // Get single part by ID
     if (id) {
+      // @ts-ignore - CarPart model exists after prisma generate
       const part = await prisma.carPart.findUnique({
         where: { id }
       });
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all parts with filters
+    // @ts-ignore - CarPart model exists after prisma generate
     const parts = await prisma.carPart.findMany({
       where,
       orderBy: { createdAt: 'desc' }
@@ -62,6 +64,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // @ts-ignore - CarPart model exists after prisma generate
     const part = await prisma.carPart.create({
       data: {
         nameAr,
@@ -111,6 +114,7 @@ export async function PUT(request: NextRequest) {
     if (body.description !== undefined) updateData.description = body.description;
     if (body.imageUrl !== undefined) updateData.imageUrl = body.imageUrl;
 
+    // @ts-ignore - CarPart model exists after prisma generate
     const part = await prisma.carPart.update({
       where: { id },
       data: updateData
@@ -129,17 +133,38 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     
+    console.log('🗑️ DELETE request received for ID:', id);
+    
     if (!id) {
+      console.error('❌ No ID provided');
       return NextResponse.json({ error: 'Part ID required' }, { status: 400 });
     }
 
+    // Check if part exists first
+    // @ts-ignore - CarPart model exists after prisma generate
+    const existingPart = await prisma.carPart.findUnique({
+      where: { id }
+    });
+
+    if (!existingPart) {
+      console.error('❌ Part not found:', id);
+      return NextResponse.json({ error: 'Part not found' }, { status: 404 });
+    }
+
+    console.log('✅ Part found, deleting:', existingPart.nameEn);
+
+    // @ts-ignore - CarPart model exists after prisma generate
     await prisma.carPart.delete({
       where: { id }
     });
 
-    return NextResponse.json({ message: 'Part deleted successfully' });
+    console.log('✅ Part deleted successfully');
+    return NextResponse.json({ message: 'Part deleted successfully', id });
   } catch (error) {
-    console.error('DELETE /api/parts error:', error);
-    return NextResponse.json({ error: 'Failed to delete part' }, { status: 500 });
+    console.error('❌ DELETE /api/parts error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to delete part',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

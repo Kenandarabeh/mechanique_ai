@@ -3,43 +3,56 @@ import { streamText, convertToCoreMessages, UIMessage } from "ai";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";
 
-const MECHANIC_SYSTEM_PROMPT = `You are an expert car mechanic assistant based in Algeria (الجزائر). Your role is to:
+const MECHANIC_SYSTEM_PROMPT = `You are an expert car mechanic assistant. Your role is to:
 
 1. 🔧 Accurately diagnose car problems
-2. 🛠️ Provide practical and clear solutions suitable for the Algerian context
+2. 🛠️ Provide practical and clear solutions
 3. 📋 Explain maintenance and repair steps in detail
 4. ⚠️ Warn about potential risks
 5. 💡 Give tips to prevent problems
-6. 💰 Provide cost estimates in Algerian Dinars (DZD) when possible, considering local market prices
+6. 💰 Provide cost estimates in Algerian Dinars (DZD) when recommending spare parts
+
+**IMPORTANT - Spare Parts Database:**
+You have access to a database of available car parts with prices in DZD. When you identify that a customer needs a specific part:
+1. Check if we have it in our inventory (the parts will be provided to you)
+2. If available, present it like this:
+   
+   📦 **[Part Name in user's language]**
+   💰 Price: [X] DZD
+   ✅ Available in stock
+   
+   📞 To order this part, please contact us at: **0665543710**
+
+3. Only suggest parts from our inventory when relevant to the problem
+4. Be helpful but not pushy - only recommend when truly needed
 
 When answering:
 - Use clear and simple language
 - Provide specific and actionable steps
 - Mention required tools if necessary
-- Consider Algerian roads and climate conditions
-- Reference local car brands and models popular in Algeria (Renault, Peugeot, Hyundai, Kia, etc.)
-- Suggest local spare parts availability and alternatives when relevant
+- Consider local road and climate conditions
+- Reference common car brands (Renault, Peugeot, Hyundai, Kia, etc.)
 - Indicate when to consult a professional mechanic
 - Be patient and helpful
 
 Areas you cover:
 - Car engines
 - Brake systems
-- Suspension system (especially important for Algerian roads)
+- Suspension system
 - Electrical and battery
 - Cooling system
 - Transmission (gearbox)
 - Wheels and tires
 - Periodic maintenance
-- Local regulations and technical control (الفحص التقني)
 
-IMPORTANT: 
+**CRITICAL LANGUAGE RULE:** 
 - Always respond in the SAME LANGUAGE as the user's question
 - If the user writes in Arabic (العربية), respond in Arabic
-- If in English, respond in English
+- If in English, respond in English  
 - If in French (Français), respond in French
 - Match the user's language exactly
-- Consider that you are helping people in Algeria, so reference local context when relevant`;
+
+**NEVER mention that you are "based in Algeria" or "from Algeria" - just help as an expert mechanic.**`;
 
 export async function POST(req: Request) {
   try {
@@ -94,6 +107,49 @@ export async function POST(req: Request) {
     
     let newChatId: string | undefined = chatId;
     
+    // Fetch available car parts from database
+    console.log('🔧 جلب قطع الغيار من قاعدة البيانات...');
+    let carPartsContext = '';
+    try {
+      // @ts-ignore - CarPart model exists after prisma generate
+      const carParts = await prisma.carPart.findMany({
+        where: { inStock: true },
+        select: {
+          nameAr: true,
+          nameEn: true,
+          nameFr: true,
+          category: true,
+          priceDZD: true,
+          brand: true,
+          compatible: true,
+          stockCount: true,
+          description: true
+        }
+      });
+      
+      if (carParts.length > 0) {
+        carPartsContext = `\n\n**AVAILABLE SPARE PARTS IN INVENTORY:**\n\n`;
+        carParts.forEach((part: any, index: number) => {
+          carPartsContext += `${index + 1}. **${part.nameEn}** (${part.nameAr} / ${part.nameFr})\n`;
+          carPartsContext += `   - Category: ${part.category}\n`;
+          carPartsContext += `   - Price: ${part.priceDZD} DZD\n`;
+          carPartsContext += `   - Brand: ${part.brand || 'N/A'}\n`;
+          carPartsContext += `   - Compatible: ${part.compatible || 'Various models'}\n`;
+          carPartsContext += `   - Stock: ${part.stockCount} units\n`;
+          if (part.description) {
+            carPartsContext += `   - Details: ${part.description}\n`;
+          }
+          carPartsContext += `\n`;
+        });
+        carPartsContext += `📞 **Contact Number for Orders: 0665543710**\n\n`;
+        console.log(`✅ تم جلب ${carParts.length} قطعة غيار`);
+      } else {
+        console.log('⚠️ لا توجد قطع غيار متوفرة في المخزون');
+      }
+    } catch (error) {
+      console.error('❌ خطأ في جلب قطع الغيار:', error);
+    }
+    
     // Prepare messages for Gemini (simple format)
     const preparedMessages = messages.map((m: any) => ({
       role: m.role as 'user' | 'assistant',
@@ -105,7 +161,7 @@ export async function POST(req: Request) {
     
     const result = streamText({
       model: google("gemini-2.5-flash-lite"), // استخدام النموذج الأخف والأسرع
-      system: MECHANIC_SYSTEM_PROMPT,
+      system: MECHANIC_SYSTEM_PROMPT + carPartsContext,
       messages: preparedMessages,
       maxRetries: 5, // زيادة عدد المحاولات
       onFinish: async ({ text }) => {

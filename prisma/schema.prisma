@@ -36,14 +36,15 @@ model Message {
 
 // User accounts (custom auth)
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String   // Hashed password
-  name      String?
-  verified  Boolean  @default(false)
-  isAdmin   Boolean  @default(false) // Super Admin flag
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String        @id @default(cuid())
+  email       String        @unique
+  password    String        // Hashed password
+  name        String?
+  verified    Boolean       @default(false)
+  isAdmin     Boolean       @default(false) // Super Admin flag
+  oilChanges  OilChange[]   // User's oil change records
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@index([email])
   @@index([isAdmin])
@@ -80,4 +81,26 @@ model CarPart {
   @@index([category])
   @@index([nameAr])
   @@index([nameEn])
+}
+
+// Oil Change Records (تتبع تغيير الزيت)
+model OilChange {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Car Information
+  carModel      String?  // نوع السيارة
+  purchaseDate  DateTime? // تاريخ الشراء
+  
+  // Oil Change Data
+  changeDate    DateTime // تاريخ التغيير
+  kilometersDone Int     // الكيلومترات عند التغيير
+  notes         String?  // ملاحظات
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([changeDate])
 }
