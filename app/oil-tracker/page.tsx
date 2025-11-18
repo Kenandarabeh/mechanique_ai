@@ -7,6 +7,13 @@ import { useTranslation } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Loading from '@/components/ui/loading';
+import {
+  requestNotificationPermissions,
+  checkNotificationPermissions,
+  scheduleOilChangeReminders,
+  sendTestNotification,
+  isNotificationAvailable
+} from '@/lib/notifications';
 
 interface OilChange {
   date: string;
@@ -29,6 +36,7 @@ export default function OilTrackerPage() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history'>('dashboard');
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   
   const [carData, setCarData] = useState<CarData>({
     model: '',
@@ -52,11 +60,55 @@ export default function OilTrackerPage() {
     if (user) {
       const saved = localStorage.getItem(`oil-tracker-${user.email}`);
       if (saved) {
-        setCarData(JSON.parse(saved));
+        const data = JSON.parse(saved);
+        setCarData(data);
+        
+        // Check and schedule notifications
+        checkAndSetupNotifications(data);
       }
       setLoading(false);
     }
   }, [user, authLoading, router]);
+
+  // Check notification permissions and setup
+  const checkAndSetupNotifications = async (data: CarData) => {
+    if (!isNotificationAvailable()) {
+      console.log('Notifications not available on web');
+      return;
+    }
+
+    const hasPermission = await checkNotificationPermissions();
+    setNotificationsEnabled(hasPermission);
+
+    if (hasPermission && data.lastChangeDate) {
+      // Schedule reminders
+      await scheduleOilChangeReminders(
+        data.lastChangeDate,
+        data.currentKm,
+        data.lastChangeKm
+      );
+    }
+  };
+
+  // Request notification permissions
+  const handleEnableNotifications = async () => {
+    const granted = await requestNotificationPermissions();
+    setNotificationsEnabled(granted);
+    
+    if (granted) {
+      alert('✅ تم تفعيل الإشعارات بنجاح!');
+      // Schedule notifications
+      if (carData.lastChangeDate) {
+        await scheduleOilChangeReminders(
+          carData.lastChangeDate,
+          carData.currentKm,
+          carData.lastChangeKm
+        );
+      }
+    } else {
+      alert('❌ لم يتم السماح بالإشعارات');
+    }
+  };
 
   // Save data to localStorage
   const saveData = (data: CarData) => {
@@ -91,7 +143,7 @@ export default function OilTrackerPage() {
   };
 
   // Handle oil change
-  const handleOilChange = () => {
+  const handleOilChange = async () => {
     if (!newKm || parseInt(newKm) <= 0) {
       alert(t('oilTracker.updateKm'));
       return;
@@ -114,6 +166,16 @@ export default function OilTrackerPage() {
     saveData(updatedData);
     setNewKm('');
     setNotes('');
+    
+    // Reschedule notifications
+    if (notificationsEnabled) {
+      await scheduleOilChangeReminders(
+        change.date,
+        change.km,
+        change.km
+      );
+    }
+    
     alert('✅ ' + t('oilTracker.oilChanged'));
   };
 
@@ -173,6 +235,35 @@ export default function OilTrackerPage() {
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
             {t('oilTracker.recommended')}
           </p>
+          
+          {/* Notification Status */}
+          {isNotificationAvailable() && (
+            <div className="mt-4 flex items-center gap-3">
+              {notificationsEnabled ? (
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <span className="text-xl">🔔</span>
+                  <span className="text-sm font-medium">الإشعارات مفعلة</span>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleEnableNotifications}
+                  variant="outline"
+                  size="sm"
+                  className="text-sm"
+                >
+                  🔕 تفعيل الإشعارات
+                </Button>
+              )}
+              <Button
+                onClick={sendTestNotification}
+                variant="outline"
+                size="sm"
+                className="text-sm"
+              >
+                🧪 اختبار الإشعار
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}

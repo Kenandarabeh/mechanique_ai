@@ -120,6 +120,9 @@ export const translations = {
     "oilTracker.warning": "قريب من الموعد",
     "oilTracker.overdue": "متأخر!",
     "oilTracker.recommended": "الموصى به: كل 6 أشهر أو 5000 كم",
+    "oilTracker.notificationsEnabled": "الإشعارات مفعلة",
+    "oilTracker.enableNotifications": "تفعيل الإشعارات",
+    "oilTracker.testNotification": "اختبار الإشعار",
     
     // Common
     "common.loading": "جاري التحميل...",
