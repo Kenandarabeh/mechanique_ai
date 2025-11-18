@@ -41,10 +41,12 @@ model User {
   password  String   // Hashed password
   name      String?
   verified  Boolean  @default(false)
+  isAdmin   Boolean  @default(false) // Super Admin flag
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([email])
+  @@index([isAdmin])
 }
 
 // Email verification codes (OTP)
@@ -56,4 +58,26 @@ model VerificationCode {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+// Car Parts/Pieces for spare parts management
+model CarPart {
+  id          String   @id @default(cuid())
+  nameAr      String   // Arabic name
+  nameEn      String   // English name
+  nameFr      String   // French name
+  category    String   // Engine, Brakes, Electrical, etc.
+  priceDZD    Float    // Price in Algerian Dinars
+  brand       String?  // Brand (optional)
+  compatible  String?  // Compatible car models
+  inStock     Boolean  @default(true)
+  stockCount  Int      @default(0)
+  description String?  // Additional description
+  imageUrl    String?  // Image URL (optional)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([nameAr])
+  @@index([nameEn])
 }

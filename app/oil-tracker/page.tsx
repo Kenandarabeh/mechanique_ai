@@ -37,6 +37,7 @@ export default function OilTrackerPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history'>('dashboard');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationStatus, setNotificationStatus] = useState<string>('');
   
   const [carData, setCarData] = useState<CarData>({
     model: '',

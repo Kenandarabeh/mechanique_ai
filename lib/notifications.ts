@@ -69,7 +69,9 @@ export const scheduleOilChangeReminders = async (
         body: `مر ${daysSinceChange} يوماً و ${kmSinceChange} كم منذ آخر تغيير. يجب تغيير الزيت فوراً!`,
         schedule: { at: new Date(Date.now() + 5000) }, // After 5 seconds
         actionTypeId: 'OIL_OVERDUE',
-        extra: { type: 'overdue' }
+        extra: { type: 'overdue' },
+        smallIcon: 'ic_stat_notification',
+        largeIcon: 'ic_launcher'
       });
     }
     // 2. Warning notification if close to due date
@@ -83,7 +85,9 @@ export const scheduleOilChangeReminders = async (
         body: `باقي ${daysRemaining} يوم أو ${kmRemaining} كم. جهز سيارتك للصيانة قريباً!`,
         schedule: { at: new Date(Date.now() + 5000) },
         actionTypeId: 'OIL_WARNING',
-        extra: { type: 'warning' }
+        extra: { type: 'warning' },
+        smallIcon: 'ic_stat_notification',
+        largeIcon: 'ic_launcher'
       });
     }
 
@@ -99,7 +103,9 @@ export const scheduleOilChangeReminders = async (
           body: 'باقي 30 يوماً على موعد تغيير الزيت الموصى به. جهز سيارتك!',
           schedule: { at: warningDate },
           actionTypeId: 'OIL_WARNING',
-          extra: { type: 'warning' }
+          extra: { type: 'warning' },
+          smallIcon: 'ic_stat_notification',
+          largeIcon: 'ic_launcher'
         });
       }
     }
@@ -116,7 +122,9 @@ export const scheduleOilChangeReminders = async (
           body: 'مرت 6 أشهر منذ آخر تغيير. يجب تغيير الزيت الآن!',
           schedule: { at: dueDate },
           actionTypeId: 'OIL_OVERDUE',
-          extra: { type: 'overdue' }
+          extra: { type: 'overdue' },
+          smallIcon: 'ic_stat_notification',
+          largeIcon: 'ic_launcher'
         });
       }
     }
@@ -129,7 +137,9 @@ export const scheduleOilChangeReminders = async (
         body: `قطعت ${kmSinceChange} كم منذ آخر تغيير. باقي ${5000 - kmSinceChange} كم فقط!`,
         schedule: { at: new Date(Date.now() + 10000) }, // After 10 seconds
         actionTypeId: 'OIL_KM_WARNING',
-        extra: { type: 'km_warning' }
+        extra: { type: 'km_warning' },
+        smallIcon: 'ic_stat_notification',
+        largeIcon: 'ic_launcher'
       });
     }
 
@@ -182,6 +192,8 @@ export const sendTestNotification = async () => {
           title: '🔧 MechaMind',
           body: 'الإشعارات تعمل بنجاح! ✅',
           schedule: { at: new Date(Date.now() + 2000) },
+          smallIcon: 'ic_stat_notification',
+          largeIcon: 'ic_launcher'
         }
       ]
     });
