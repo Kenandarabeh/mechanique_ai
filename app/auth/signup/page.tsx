@@ -325,7 +325,7 @@ export default function SignUpPage() {
 
           <p className="text-center text-sm">
             {t.hasAccount}{' '}
-            <a href="/sign-in" className="font-semibold text-gray-900 hover:text-gray-700 dark:text-gray-100 dark:hover:text-gray-300">
+            <a href="/auth/signin" className="font-semibold text-gray-900 hover:text-gray-700 dark:text-gray-100 dark:hover:text-gray-300">
               {t.signin}
             </a>
           </p>
