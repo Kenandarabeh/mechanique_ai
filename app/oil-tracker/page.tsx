@@ -31,7 +31,7 @@ interface OilChangeRecord {
 export default function OilTrackerPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'add'>('dashboard');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
@@ -547,11 +547,11 @@ export default function OilTrackerPage() {
                     {getStatusText()}
                   </h2>
                   <p className="text-lg">
-                    مرت <strong>{days} يوم</strong> منذ آخر تغيير زيت
+                    {t('oilTracker.daysSinceChange').replace('{days}', days.toString())}
                   </p>
                   {nextChange && (
                     <p className="text-sm mt-2">
-                      التغيير القادم: <strong>{nextChange.toLocaleDateString('ar-DZ', { 
+                      {t('oilTracker.nextChangeIn')}: <strong>{nextChange.toLocaleDateString(locale === 'ar' ? 'ar-DZ' : locale === 'fr' ? 'fr-FR' : 'en-US', { 
                         year: 'numeric', 
                         month: 'long', 
                         day: 'numeric' 
@@ -563,23 +563,23 @@ export default function OilTrackerPage() {
                 {/* Latest Oil Change Info */}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                    📝 آخر تغيير زيت
+                    📝 {t('oilTracker.lastOilChange')}
                   </h3>
                   <div className="space-y-2 text-gray-700 dark:text-gray-300">
                     <p>
-                      <strong>التاريخ:</strong> {new Date(oilChanges[0].changeDate).toLocaleDateString('ar-DZ')}
+                      <strong>{t('oilTracker.lastChangeDate')}:</strong> {new Date(oilChanges[0].changeDate).toLocaleDateString(locale === 'ar' ? 'ar-DZ' : locale === 'fr' ? 'fr-FR' : 'en-US')}
                     </p>
                     <p>
-                      <strong>الكيلومترات:</strong> {oilChanges[0].kilometersDone.toLocaleString('ar-DZ')} كم
+                      <strong>{t('oilTracker.lastChangeKm')}:</strong> {oilChanges[0].kilometersDone.toLocaleString(locale === 'ar' ? 'ar-DZ' : locale === 'fr' ? 'fr-FR' : 'en-US')} {t('oilTracker.km')}
                     </p>
                     {oilChanges[0].carModel && (
                       <p>
-                        <strong>موديل السيارة:</strong> {oilChanges[0].carModel}
+                        <strong>{t('oilTracker.carModel')}:</strong> {oilChanges[0].carModel}
                       </p>
                     )}
                     {oilChanges[0].notes && (
                       <p>
-                        <strong>ملاحظات:</strong> {oilChanges[0].notes}
+                        <strong>{t('oilTracker.notes')}:</strong> {oilChanges[0].notes}
                       </p>
                     )}
                   </div>
@@ -588,13 +588,13 @@ export default function OilTrackerPage() {
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
                 <p className="text-xl text-gray-500 dark:text-gray-400 mb-4">
-                  لا توجد سجلات حتى الآن
+                  {t('oilTracker.noRecordsYet')}
                 </p>
                 <Button
                   onClick={() => setActiveTab('add')}
                   className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900"
                 >
-                  ➕ إضافة أول سجل
+                  ➕ {t('oilTracker.addFirstRecord')}
                 </Button>
               </div>
             )}
@@ -602,31 +602,31 @@ export default function OilTrackerPage() {
             {/* Notifications Card */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
               <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-                🔔 الإشعارات
+                🔔 {t('oilTracker.notifications')}
               </h3>
               
               {!isNotificationAvailable() ? (
                 <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
                   <p className="text-yellow-800 dark:text-yellow-200 text-sm">
-                    📱 <strong>الإشعارات متوفرة فقط على التطبيق!</strong>
+                    📱 <strong>{t('oilTracker.notificationsOnlyOnApp')}</strong>
                     <br />
-                    قم بتحميل التطبيق على هاتفك للحصول على تنبيهات تلقائية عند اقتراب موعد تغيير الزيت.
+                    {t('oilTracker.downloadAppForNotifications')}
                   </p>
                 </div>
               ) : notificationsEnabled ? (
                 <div className="text-green-600 dark:text-green-400">
-                  ✅ الإشعارات مفعّلة - سنذكرك عندما يحين موعد تغيير الزيت
+                  ✅ {t('oilTracker.notificationsEnabled')}
                 </div>
               ) : (
                 <div>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    قم بتفعيل الإشعارات لتلقي تنبيهات تلقائية عند اقتراب موعد تغيير الزيت
+                    {t('oilTracker.enableNotificationsDesc')}
                   </p>
                   <Button
                     onClick={handleEnableNotifications}
                     className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900"
                   >
-                    🔔 تفعيل الإشعارات
+                    🔔 {t('oilTracker.enableNotifications')}
                   </Button>
                 </div>
               )}
@@ -635,13 +635,13 @@ export default function OilTrackerPage() {
             {/* Info Card */}
             <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-6">
               <h3 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-2">
-                💡 معلومة مهمة
+                💡 {t('oilTracker.importantInfo')}
               </h3>
               <p className="text-blue-800 dark:text-blue-200 text-sm">
-                • النظام يعتمد على <strong>الوقت</strong> وليس الكيلومترات<br />
-                • يُنصح بتغيير الزيت كل <strong>6 أشهر (180 يوم)</strong><br />
-                • التنبيه يبدأ قبل 30 يوم من الموعد<br />
-                • جميع البيانات محفوظة في السيرفر ومتزامنة
+                {t('oilTracker.systemBasedOnTime')}<br />
+                {t('oilTracker.changeEvery6Months')}<br />
+                {t('oilTracker.alertStarts30Days')}<br />
+                {t('oilTracker.dataSyncedToServer')}
               </p>
             </div>
           </div>
@@ -651,12 +651,12 @@ export default function OilTrackerPage() {
         {activeTab === 'history' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
-              📜 سجل تغييرات الزيت
+              📜 {t('oilTracker.changeHistory')}
             </h2>
             
             {oilChanges.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
-                لا توجد سجلات
+                {t('oilTracker.noHistory')}
               </div>
             ) : (
               <div className="space-y-4">
@@ -668,21 +668,21 @@ export default function OilTrackerPage() {
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h3 className="font-bold text-gray-900 dark:text-gray-100">
-                          {new Date(change.changeDate).toLocaleDateString('ar-DZ', { 
+                          {new Date(change.changeDate).toLocaleDateString(locale === 'ar' ? 'ar-DZ' : locale === 'fr' ? 'fr-FR' : 'en-US', { 
                             year: 'numeric', 
                             month: 'long', 
                             day: 'numeric' 
                           })}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {change.kilometersDone.toLocaleString('ar-DZ')} كم
+                          {change.kilometersDone.toLocaleString(locale === 'ar' ? 'ar-DZ' : locale === 'fr' ? 'fr-FR' : 'en-US')} {t('oilTracker.km')}
                         </p>
                       </div>
                       <button
                         onClick={() => handleDeleteOilChange(change.id)}
                         className="text-red-600 hover:text-red-700 text-sm"
                       >
-                        🗑️ حذف
+                        🗑️ {t('oilTracker.delete')}
                       </button>
                     </div>
                     {change.carModel && (
@@ -709,29 +709,29 @@ export default function OilTrackerPage() {
             {oilChanges.length === 0 && (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
                 <h2 className="text-xl font-bold text-blue-900 dark:text-blue-100 mb-4">
-                  🚗 معلومات السيارة (تُكتب مرة واحدة فقط)
+                  🚗 {t('oilTracker.carInfoOnceOnly')}
                 </h2>
                 <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
-                  سيتم استخدام هذه المعلومات لجميع السجلات المستقبلية
+                  {t('oilTracker.carInfoUsedForAll')}
                 </p>
                 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-                      موديل السيارة <span className="text-red-500">*</span>
+                      {t('oilTracker.carModel')} <span className="text-red-500">{t('oilTracker.required')}</span>
                     </label>
                     <Input
                       type="text"
                       value={carInfo.model}
                       onChange={(e) => setCarInfo({ ...carInfo, model: e.target.value })}
-                      placeholder="مثال: Renault Clio 2020"
+                      placeholder={locale === 'ar' ? 'مثال: Renault Clio 2020' : locale === 'fr' ? 'Ex: Renault Clio 2020' : 'e.g: Renault Clio 2020'}
                       required
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-                      تاريخ شراء السيارة <span className="text-red-500">*</span>
+                      {t('oilTracker.purchaseDate')} <span className="text-red-500">{t('oilTracker.required')}</span>
                     </label>
                     <Input
                       type="date"
@@ -749,16 +749,16 @@ export default function OilTrackerPage() {
             {oilChanges.length > 0 && carInfo.model && (
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-2">
-                  🚗 معلومات السيارة المحفوظة
+                  🚗 {t('oilTracker.savedCarInfo')}
                 </h3>
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <strong>الموديل:</strong> {carInfo.model}
+                  <strong>{t('oilTracker.model')}:</strong> {carInfo.model}
                 </p>
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  <strong>تاريخ الشراء:</strong> {new Date(carInfo.purchaseDate).toLocaleDateString('ar-DZ')}
+                  <strong>{t('oilTracker.purchaseDate')}:</strong> {new Date(carInfo.purchaseDate).toLocaleDateString(locale === 'ar' ? 'ar-DZ' : locale === 'fr' ? 'fr-FR' : 'en-US')}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  💡 لتغيير معلومات السيارة، استخدم زر "إعادة تهيئة" عند بيع السيارة
+                  💡 {t('oilTracker.toChangeCarInfo')}
                 </p>
               </div>
             )}
@@ -766,13 +766,13 @@ export default function OilTrackerPage() {
             {/* Oil Change Form */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">
-                ➕ إضافة سجل تغيير زيت جديد
+                ➕ {t('oilTracker.addNewRecord')}
               </h2>
               
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    تاريخ تغيير الزيت <span className="text-red-500">*</span>
+                    {t('oilTracker.oilChangeDate')} <span className="text-red-500">{t('oilTracker.required')}</span>
                   </label>
                   <Input
                     type="date"
@@ -785,13 +785,13 @@ export default function OilTrackerPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    الكيلومترات عند التغيير <span className="text-red-500">*</span>
+                    {t('oilTracker.kmAtChange')} <span className="text-red-500">{t('oilTracker.required')}</span>
                   </label>
                   <Input
                     type="number"
                     value={formData.kilometersDone}
                     onChange={(e) => setFormData({ ...formData, kilometersDone: e.target.value })}
-                    placeholder="مثال: 45000"
+                    placeholder={locale === 'ar' ? 'مثال: 45000' : locale === 'fr' ? 'Ex: 45000' : 'e.g: 45000'}
                     min="0"
                     required
                   />
@@ -799,14 +799,14 @@ export default function OilTrackerPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    ملاحظات (اختياري)
+                    {t('oilTracker.addNotesOptional')}
                   </label>
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                     rows={3}
-                    placeholder="أي ملاحظات إضافية..."
+                    placeholder={t('oilTracker.addNotes')}
                   />
                 </div>
 
@@ -814,7 +814,7 @@ export default function OilTrackerPage() {
                   onClick={handleAddOilChange}
                   className="w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-3 text-lg"
                 >
-                  ✅ حفظ السجل
+                  ✅ {t('oilTracker.saveRecord')}
                 </Button>
               </div>
             </div>
